@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { GameStore, DifficultyLevel, Player } from '../types';
+import { audioManager } from '../services/audioManager';
 import {
   generateFeedback,
   calculateScore,
@@ -17,6 +18,7 @@ import { LEVELS } from '../engine/config/phonemes';
 
 const initialState = {
   gameState: 'MENU' as const,
+  gameMode: 'quiz' as const,
   difficulty: null,
   currentLevel: null,
   currentPhonemeIndex: 0,
@@ -27,6 +29,10 @@ const initialState = {
   currentPlayer: null,
   isAudioPlaying: false,
   lastFeedback: null,
+  targetWord: [] as string[],
+  assembledSlots: [] as Array<string | null>,
+  availableWordPhonemes: [] as string[],
+  currentChallengeId: null as string | null,
 };
 
 export const useGameStore = create<GameStore>()(
@@ -36,6 +42,12 @@ export const useGameStore = create<GameStore>()(
     setGameState: (gameState) => {
       set((state) => {
         state.gameState = gameState;
+      });
+    },
+
+    setGameMode: (mode) => {
+      set((state) => {
+        state.gameMode = mode;
       });
     },
 
@@ -50,6 +62,7 @@ export const useGameStore = create<GameStore>()(
     initializeGame: (player: Player, difficulty: DifficultyLevel) => {
       set((state) => {
         state.currentPlayer = player;
+        state.gameMode = 'quiz';
         state.difficulty = difficulty;
         state.currentLevel = getLevel(difficulty);
         state.gameState = 'PLAYING';
@@ -59,6 +72,33 @@ export const useGameStore = create<GameStore>()(
         state.currentPhonemeIndex = 0;
         state.totalQuestions = LEVELS[difficulty].totalQuestions;
         state.lastFeedback = null;
+        state.targetWord = [];
+        state.assembledSlots = [];
+        state.availableWordPhonemes = [];
+        state.currentChallengeId = null;
+      });
+    },
+
+    setWordChallenge: (wordArray: string[], challengeId: string | null = null) => {
+      const normalized = wordArray
+        .map((item) => item.trim().toLowerCase())
+        .filter((item) => item.length > 0);
+
+      const shuffled = [...normalized].sort(() => Math.random() - 0.5);
+
+      set((state) => {
+        state.gameMode = 'word-builder';
+        state.gameState = 'PLAYING';
+        state.targetWord = normalized;
+        state.assembledSlots = new Array(normalized.length).fill(null);
+        state.availableWordPhonemes = shuffled;
+        state.currentChallengeId = challengeId;
+        state.totalQuestions = normalized.length;
+        state.currentPhonemeIndex = 0;
+        state.lastFeedback = null;
+        state.correctAnswers = 0;
+        state.incorrectAnswers = 0;
+        state.score = 0;
       });
     },
 
@@ -78,6 +118,11 @@ export const useGameStore = create<GameStore>()(
 
     answerQuestion: (selectedPhonemeId: string, correctPhonemeId: string) => {
       const state = get();
+
+      if (state.gameMode === 'word-builder') {
+        return;
+      }
+
       const isCorrect = validateAnswer(correctPhonemeId, selectedPhonemeId);
       const scorePoints = calculateScore(state.difficulty || 'easy', 5, isCorrect);
 
@@ -115,9 +160,74 @@ export const useGameStore = create<GameStore>()(
       });
     },
 
+    handleDrop: (phonemeId: string, slotIndex: number) => {
+      const state = get();
+
+      if (state.gameMode !== 'word-builder') {
+        return false;
+      }
+
+      if (slotIndex < 0 || slotIndex >= state.targetWord.length) {
+        return false;
+      }
+
+      if (state.assembledSlots[slotIndex] !== null) {
+        return false;
+      }
+
+      const normalized = phonemeId.trim().toLowerCase();
+      const expected = state.targetWord[slotIndex];
+      const isCorrect = normalized === expected;
+
+      set((draft) => {
+        if (isCorrect) {
+          draft.assembledSlots[slotIndex] = normalized;
+          draft.correctAnswers += 1;
+          draft.score += 25;
+        } else {
+          draft.incorrectAnswers += 1;
+        }
+      });
+
+      if (isCorrect) {
+        void get().checkWordCompletion();
+      }
+
+      return isCorrect;
+    },
+
+    checkWordCompletion: () => {
+      const state = get();
+
+      if (state.gameMode !== 'word-builder') {
+        return false;
+      }
+
+      const isCompleted =
+        state.assembledSlots.length > 0 &&
+        state.assembledSlots.every((slot, index) => slot === state.targetWord[index]);
+
+      if (isCompleted) {
+        set((draft) => {
+          draft.gameState = 'VICTORY';
+          draft.lastFeedback = {
+            isCorrect: true,
+            selectedId: 'word-builder',
+            correctId: 'word-builder',
+            currentScore: draft.score,
+            message: 'GOOOOOL! Palavra montada com sucesso! ⚽',
+          };
+        });
+        void audioManager.playGoalSound();
+      }
+
+      return isCompleted;
+    },
+
     resetGame: () => {
       set((state) => {
         state.gameState = 'MENU';
+        state.gameMode = 'quiz';
         state.difficulty = null;
         state.currentLevel = null;
         state.currentPhonemeIndex = 0;
@@ -128,6 +238,10 @@ export const useGameStore = create<GameStore>()(
         state.currentPlayer = null;
         state.isAudioPlaying = false;
         state.lastFeedback = null;
+        state.targetWord = [];
+        state.assembledSlots = [];
+        state.availableWordPhonemes = [];
+        state.currentChallengeId = null;
       });
     },
 

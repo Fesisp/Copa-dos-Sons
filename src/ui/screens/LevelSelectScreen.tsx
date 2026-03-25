@@ -7,10 +7,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { DifficultySelector, Button } from '../components';
 import { useGameStore } from '../../store/gameStore';
-import type { DifficultyLevel } from '../../types';
+import type { AppScreen, DifficultyLevel } from '../../types';
 
 interface LevelSelectScreenProps {
-  onNavigate: (screen: 'menu' | 'levelSelect' | 'game' | 'results') => void;
+  onNavigate: (screen: AppScreen) => void;
 }
 
 export const LevelSelectScreen: React.FC<LevelSelectScreenProps> = ({ onNavigate }) => {

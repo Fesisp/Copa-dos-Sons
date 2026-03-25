@@ -5,7 +5,7 @@
  */
 
 import Dexie, { type Table } from 'dexie';
-import type { Player, GameSession, SessionProgress } from '../types';
+import type { Player, GameSession, SessionProgress, CustomWord } from '../types';
 
 /**
  * Dexie Database Schema
@@ -14,6 +14,7 @@ export class CopaDosSonsDB extends Dexie {
   players!: Table<Player>;
   sessions!: Table<GameSession>;
   progress!: Table<SessionProgress>;
+  customWords!: Table<CustomWord>;
 
   constructor() {
     super('copa-dos-sons');
@@ -21,6 +22,13 @@ export class CopaDosSonsDB extends Dexie {
       players: 'id, createdAt',
       sessions: 'id, playerId, startedAt',
       progress: '++id, sessionId, phonemeId, timestamp',
+    });
+
+    this.version(2).stores({
+      players: 'id, name, createdAt',
+      sessions: 'id, playerId, startedAt',
+      progress: '++id, sessionId, phonemeId, timestamp',
+      customWords: 'id, creatorName, createdAt, playedCount',
     });
   }
 }
@@ -271,5 +279,53 @@ export const progressService = {
     await db.players.clear();
     await db.sessions.clear();
     await db.progress.clear();
+    await db.customWords.clear();
+  },
+};
+
+/**
+ * Custom Word Service - Manage class-created challenge words
+ */
+export const customWordService = {
+  /**
+   * Save a new custom challenge word
+   */
+  async saveCustomWord(wordArray: string[], creatorName: string): Promise<CustomWord> {
+    const normalizedWordArray = wordArray
+      .map((item) => item.trim().toLowerCase())
+      .filter((item) => item.length > 0);
+
+    if (normalizedWordArray.length === 0) {
+      throw new Error('A palavra precisa ter ao menos um fonema');
+    }
+
+    const customWord: CustomWord = {
+      id: `word_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      wordArray: normalizedWordArray,
+      creatorName,
+      createdAt: new Date(),
+      playedCount: 0,
+    };
+
+    await db.customWords.add(customWord);
+    return customWord;
+  },
+
+  /**
+   * List all challenge words, newest first
+   */
+  async getAllCustomWords(): Promise<CustomWord[]> {
+    return db.customWords.orderBy('createdAt').reverse().toArray();
+  },
+
+  /**
+   * Increase the number of times a challenge was played
+   */
+  async incrementPlayedCount(id: string): Promise<void> {
+    const existing = await db.customWords.get(id);
+    if (!existing) return;
+
+    existing.playedCount += 1;
+    await db.customWords.put(existing);
   },
 };

@@ -5,6 +5,16 @@
 
 export type DifficultyLevel = 'easy' | 'medium' | 'hard';
 
+export type GameMode = 'quiz' | 'word-builder';
+
+export type AppScreen =
+  | 'menu'
+  | 'levelSelect'
+  | 'game'
+  | 'results'
+  | 'creation'
+  | 'challengeList';
+
 export interface Phoneme {
   id: string;
   phoneme: string; // e.g., "p", "b", "m"
@@ -54,6 +64,14 @@ export interface Player {
   averageScore: number;
 }
 
+export interface CustomWord {
+  id: string;
+  wordArray: string[];
+  creatorName: string;
+  createdAt: Date;
+  playedCount: number;
+}
+
 export interface FeedbackResult {
   isCorrect: boolean;
   selectedId: string;
@@ -65,6 +83,7 @@ export interface FeedbackResult {
 export interface GameStore {
   // State
   gameState: GameState;
+  gameMode: GameMode;
   difficulty: DifficultyLevel | null;
   currentLevel: Level | null;
   currentPhonemeIndex: number;
@@ -75,13 +94,21 @@ export interface GameStore {
   currentPlayer: Player | null;
   isAudioPlaying: boolean;
   lastFeedback: FeedbackResult | null;
+  targetWord: string[];
+  assembledSlots: Array<string | null>;
+  availableWordPhonemes: string[];
+  currentChallengeId: string | null;
 
   // Actions
   setGameState: (state: GameState) => void;
+  setGameMode: (mode: GameMode) => void;
   selectDifficulty: (difficulty: DifficultyLevel) => void;
   initializeGame: (player: Player, difficulty: DifficultyLevel) => void;
+  setWordChallenge: (wordArray: string[], challengeId?: string | null) => void;
   playPhonemeAudio: () => Promise<void>;
   answerQuestion: (selectedPhonemeId: string, correctPhonemeId: string) => void;
+  handleDrop: (phonemeId: string, slotIndex: number) => boolean;
+  checkWordCompletion: () => boolean;
   nextPhoneme: () => void;
   resetGame: () => void;
   incrementScore: (points: number) => void;

@@ -4,77 +4,112 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, type PanInfo } from 'framer-motion';
 import type { Phoneme } from '../../types';
 
 interface PhonemeCardProps {
-  phoneme: Phoneme;
+  phoneme?: Phoneme;
+  id?: string;
+  imageUrl?: string;
+  altText?: string;
+  status?: 'idle' | 'correct' | 'incorrect';
   isSelected?: boolean;
   isCorrect?: boolean;
   isWrong?: boolean;
-  onClick?: (phoneme: Phoneme) => void;
+  onClick?: ((phoneme: Phoneme) => void) | ((id: string) => void);
   disabled?: boolean;
+  draggable?: boolean;
+  onDragMove?: (phonemeId: string, point: { x: number; y: number }) => void;
+  onDragEndPosition?: (phonemeId: string, point: { x: number; y: number }) => void;
 }
 
 export const PhonemeCard: React.FC<PhonemeCardProps> = ({
   phoneme,
+  id,
+  imageUrl,
+  altText,
+  status,
   isSelected = false,
   isCorrect = false,
   isWrong = false,
   onClick,
   disabled = false,
+  draggable = false,
+  onDragMove,
+  onDragEndPosition,
 }) => {
+  const resolvedId = phoneme?.id ?? id ?? '';
+  const resolvedImageUrl = phoneme?.imageUrl ?? imageUrl ?? '/images/placeholder.png';
+  const resolvedAltText = phoneme?.phoneme ?? altText ?? resolvedId;
+  const resolvedStatus = status ?? (isCorrect ? 'correct' : isWrong ? 'incorrect' : 'idle');
+
   const handleClick = () => {
     if (!disabled && onClick) {
-      onClick(phoneme);
+      if (phoneme) {
+        (onClick as (phoneme: Phoneme) => void)(phoneme);
+      } else if (resolvedId) {
+        (onClick as (id: string) => void)(resolvedId);
+      }
     }
+  };
+
+  const animations = {
+    idle: { scale: 1, rotate: 0, x: 0 },
+    correct: { scale: 1.1, rotate: [0, -5, 5, -5, 0], x: 0, transition: { duration: 0.5 } },
+    incorrect: { x: [-10, 10, -10, 10, 0], scale: 1, rotate: 0, transition: { duration: 0.4 } },
+  };
+
+  const borderColors = {
+    idle: isSelected ? 'border-uniform-500 border-4' : 'border-white border-4',
+    correct: 'border-field-500 border-8 shadow-green-500/50',
+    incorrect: 'border-red-500 border-4 opacity-50',
+  };
+
+  const handleDrag = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (!resolvedId || !onDragMove) return;
+    onDragMove(resolvedId, info.point);
+  };
+
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (!resolvedId || !onDragEndPosition) return;
+    onDragEndPosition(resolvedId, info.point);
   };
 
   return (
     <motion.div
-      className={`
-        relative p-4 rounded-lg cursor-pointer transition-all duration-200
-        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-        ${isWrong ? 'bg-error-100 border-2 border-error-500' : 'bg-white'}
-        ${isCorrect ? 'bg-success-100 border-2 border-success-500' : ''}
-        ${isSelected && !isCorrect && !isWrong ? 'border-2 border-uniform-500' : 'border-2 border-neutral-200'}
-        shadow-card hover:shadow-md
-      `}
+      animate={animations[resolvedStatus]}
+      whileHover={!disabled && resolvedStatus === 'idle' ? { scale: 1.05 } : {}}
+      whileTap={!disabled && resolvedStatus === 'idle' ? { scale: 0.95 } : {}}
+      drag={draggable && !disabled && resolvedStatus === 'idle'}
+      dragSnapToOrigin={draggable}
+      onDrag={draggable ? handleDrag : undefined}
+      onDragEnd={draggable ? handleDragEnd : undefined}
       onClick={handleClick}
-      whileHover={!disabled ? { scale: 1.05 } : {}}
-      whileTap={!disabled ? { scale: 0.95 } : {}}
-      animate={isCorrect ? { scale: 1.1 } : isWrong ? { x: [-10, 10, -10, 10, 0] } : {}}
-      transition={{ duration: isCorrect ? 0.5 : isWrong ? 0.4 : 0.2 }}
+      className={`relative cursor-pointer rounded-2xl bg-white shadow-xl overflow-hidden ${disabled ? 'cursor-not-allowed' : ''} ${borderColors[resolvedStatus]}`}
     >
-      <div className="aspect-square w-full bg-neutral-50 rounded-md flex items-center justify-center overflow-hidden mb-3">
+      <div className="aspect-square w-full p-4 flex items-center justify-center">
         <img
-          src={phoneme.imageUrl}
-          alt={phoneme.phoneme}
-          className="w-full h-full object-cover"
+          src={resolvedImageUrl}
+          alt={resolvedAltText}
+          className="w-full h-full object-contain drop-shadow-md"
+          draggable={false}
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = '/images/placeholder.png';
           }}
         />
       </div>
 
-      <div className="text-center">
-        <p className="font-display text-2xl font-bold text-neutral-900 mb-1">
-          {phoneme.phoneme.toUpperCase()}
-        </p>
-        <p className="text-sm text-neutral-600">
-          {phoneme.examples[0]}
-        </p>
-      </div>
-
-      {isCorrect && (
-        <div className="absolute top-2 right-2 bg-success-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg">
-          ✓
+      {!!resolvedAltText && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-neutral-900/70 text-white px-3 py-1 rounded-full text-sm font-display font-bold uppercase">
+          {resolvedAltText}
         </div>
       )}
 
-      {isWrong && (
-        <div className="absolute top-2 right-2 bg-error-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg">
-          ✗
+      {resolvedStatus === 'correct' && (
+        <div className="absolute top-2 right-2 bg-field-500 rounded-full p-1 shadow-md">
+          <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
         </div>
       )}
     </motion.div>

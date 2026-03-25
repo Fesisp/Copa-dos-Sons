@@ -8,10 +8,10 @@ import { motion } from 'framer-motion';
 import { Button } from '../components';
 import { useGameStore } from '../../store/gameStore';
 import { playerService } from '../../services/databaseService';
-import type { Player } from '../../types';
+import type { AppScreen, Player } from '../../types';
 
 interface MenuScreenProps {
-  onNavigate: (screen: 'menu' | 'levelSelect' | 'game' | 'results') => void;
+  onNavigate: (screen: AppScreen) => void;
 }
 
 export const MenuScreen: React.FC<MenuScreenProps> = ({ onNavigate }) => {
@@ -137,6 +137,20 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ onNavigate }) => {
           </div>
         </motion.div>
       )}
+
+      <motion.div
+        className="w-full max-w-md mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <Button variant="secondary" size="md" onClick={() => onNavigate('challengeList')}>
+          🏆 Desafios da Turma
+        </Button>
+        <Button variant="primary" size="md" onClick={() => onNavigate('creation')}>
+          🧩 Centro de Treinamento
+        </Button>
+      </motion.div>
     </div>
   );
 };

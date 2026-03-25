@@ -7,6 +7,17 @@
 import { Howl } from 'howler';
 import type { AudioIndex, AudioManagerConfig } from '../types';
 
+interface AudioSpriteHowlerEntry {
+  start: number;
+  end: number;
+  loop?: boolean;
+}
+
+interface AudioSpriteHowlerJson {
+  resources?: string[];
+  spritemap?: Record<string, AudioSpriteHowlerEntry>;
+}
+
 class AudioManager {
   private howl: Howl | null = null;
   private audioIndex: AudioIndex = {};
@@ -54,12 +65,33 @@ class AudioManager {
       if (!response.ok) {
         throw new Error(`Failed to load audio index: ${response.statusText}`);
       }
-      this.audioIndex = await response.json();
+      const loadedIndex = (await response.json()) as AudioIndex | AudioSpriteHowlerJson;
+      this.audioIndex = this.normalizeAudioIndex(loadedIndex);
     } catch {
       console.warn('Audio index not found, using default mock data');
       // Use mock data if file not found
       this.audioIndex = this.getMockAudioIndex();
     }
+  }
+
+  /**
+   * Normalize supported audio index formats into internal start/duration map
+   */
+  private normalizeAudioIndex(index: AudioIndex | AudioSpriteHowlerJson): AudioIndex {
+    if ('spritemap' in index && index.spritemap) {
+      const normalized: AudioIndex = {};
+
+      Object.entries(index.spritemap).forEach(([key, value]) => {
+        normalized[key] = {
+          start: value.start,
+          duration: Math.max(0, value.end - value.start),
+        };
+      });
+
+      return normalized;
+    }
+
+    return index as AudioIndex;
   }
 
   /**
@@ -145,6 +177,17 @@ class AudioManager {
   }
 
   /**
+   * Play a full word phoneme by phoneme
+   */
+  async playPhonemeSequence(phonemeKeys: string[], gapMs = 80): Promise<void> {
+    for (const rawKey of phonemeKeys) {
+      const key = rawKey.trim().toLowerCase();
+      await this.playPhoneme(key);
+      await new Promise((resolve) => setTimeout(resolve, gapMs));
+    }
+  }
+
+  /**
    * Play success feedback sound
    */
   async playSuccessSound(): Promise<void> {
@@ -160,6 +203,13 @@ class AudioManager {
     // Placeholder for error sound
     console.log('❌ Error sound would play here');
     return new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  /**
+   * Play goal feedback sound
+   */
+  async playGoalSound(): Promise<void> {
+    await this.playSuccessSound();
   }
 
   /**

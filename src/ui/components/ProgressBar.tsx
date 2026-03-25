@@ -21,7 +21,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   showPercentage = true,
   variant = 'primary',
 }) => {
-  const percentage = Math.min((current / total) * 100, 100);
+  const percentage = Math.min(100, Math.max(0, (current / total) * 100));
 
   const colorMap = {
     primary: 'bg-uniform-600',
@@ -30,23 +30,39 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-md mx-auto">
       {label && (
-        <p className="text-sm font-semibold text-neutral-700 mb-2">
-          {label}
-        </p>
+        <div className="flex justify-between text-neutral-600 font-bold mb-2 text-sm">
+          <span>{label}</span>
+          {showPercentage && <span>{current} / {total}</span>}
+        </div>
       )}
 
-      <div className="w-full bg-neutral-200 rounded-full h-4 overflow-hidden shadow-md">
+      {!label && showPercentage && (
+        <div className="flex justify-between text-neutral-600 font-bold mb-2 text-sm">
+          <span>Progresso em Campo</span>
+          <span>{current} / {total}</span>
+        </div>
+      )}
+
+      <div className="h-6 w-full bg-neutral-200 rounded-full overflow-hidden border-2 border-neutral-300 shadow-inner">
         <motion.div
-          className={`h-full ${colorMap[variant]} rounded-full`}
+          className={`h-full ${colorMap[variant]} relative`}
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        />
+          transition={{ duration: 0.5, type: 'spring' }}
+        >
+          <div
+            className="absolute inset-0 opacity-20"
+            style={{
+              backgroundImage:
+                'repeating-linear-gradient(45deg, transparent, transparent 10px, #000 10px, #000 20px)',
+            }}
+          />
+        </motion.div>
       </div>
 
-      {showPercentage && (
+      {showPercentage && !label && (
         <p className="text-xs text-neutral-600 mt-2">
           {current} / {total} ({Math.round(percentage)}%)
         </p>

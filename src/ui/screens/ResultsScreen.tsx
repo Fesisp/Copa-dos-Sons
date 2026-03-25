@@ -9,9 +9,10 @@ import { Button } from '../components';
 import { useGameStore } from '../../store/gameStore';
 import { sessionService, playerService } from '../../services/databaseService';
 import { calculateSessionStats } from '../../engine';
+import type { AppScreen } from '../../types';
 
 interface ResultsScreenProps {
-  onNavigate: (screen: 'menu' | 'levelSelect' | 'game' | 'results') => void;
+  onNavigate: (screen: AppScreen) => void;
 }
 
 export const ResultsScreen: React.FC<ResultsScreenProps> = ({ onNavigate }) => {

@@ -4,14 +4,20 @@
  */
 
 import { useEffect, useState } from 'react';
-import { MenuScreen, LevelSelectScreen, GameScreen, ResultsScreen } from './ui/screens';
+import {
+  MenuScreen,
+  LevelSelectScreen,
+  GameScreen,
+  ResultsScreen,
+  CreationScreen,
+  ChallengeListScreen,
+} from './ui/screens';
 import { audioManager } from './services/audioManager';
+import type { AppScreen } from './types';
 import './index.css';
 
-type Screen = 'menu' | 'levelSelect' | 'game' | 'results';
-
 function App() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('menu');
+  const [currentScreen, setCurrentScreen] = useState<AppScreen>('menu');
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize services on app load
@@ -37,7 +43,7 @@ function App() {
     };
   }, []);
 
-  const handleNavigate = (screen: Screen) => {
+  const handleNavigate = (screen: AppScreen) => {
     setCurrentScreen(screen);
   };
 
@@ -67,6 +73,12 @@ function App() {
       )}
       {currentScreen === 'results' && (
         <ResultsScreen onNavigate={handleNavigate} />
+      )}
+      {currentScreen === 'creation' && (
+        <CreationScreen onNavigate={handleNavigate} />
+      )}
+      {currentScreen === 'challengeList' && (
+        <ChallengeListScreen onNavigate={handleNavigate} />
       )}
     </>
   );
