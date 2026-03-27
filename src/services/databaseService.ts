@@ -1,34 +1,26 @@
 /**
  * Dexie Database Service
- * Manages offline persistence with IndexedDB
- * Stores player data, sessions, and progress
+ * Clean-slate offline persistence for Craque Fônico
  */
 
 import Dexie, { type Table } from 'dexie';
-import type { Player, GameSession, SessionProgress, CustomWord } from '../types';
+import type { Player, CustomWord } from '../types';
+
+const INITIAL_UNLOCKED = ['a', 'e', 'i', 'o', 'u'];
+const MIN_VOTES_FOR_RANKING = 3;
 
 /**
  * Dexie Database Schema
  */
 export class CopaDosSonsDB extends Dexie {
   players!: Table<Player>;
-  sessions!: Table<GameSession>;
-  progress!: Table<SessionProgress>;
   customWords!: Table<CustomWord>;
 
   constructor() {
     super('copa-dos-sons');
     this.version(1).stores({
-      players: 'id, createdAt',
-      sessions: 'id, playerId, startedAt',
-      progress: '++id, sessionId, phonemeId, timestamp',
-    });
-
-    this.version(2).stores({
       players: 'id, name, createdAt',
-      sessions: 'id, playerId, startedAt',
-      progress: '++id, sessionId, phonemeId, timestamp',
-      customWords: 'id, creatorName, createdAt, playedCount',
+      customWords: 'id, creatorName, createdAt, totalMatches, golacos, faltas',
     });
   }
 }
@@ -43,9 +35,14 @@ export const playerService = {
    * Create or get a player by name
    */
   async upsertPlayer(name: string): Promise<Player> {
+    const normalizedName = name.trim();
+    if (!normalizedName) {
+      throw new Error('Nome do jogador é obrigatório');
+    }
+
     const existing = await db.players
       .where('name')
-      .equals(name)
+      .equalsIgnoreCase(normalizedName)
       .first();
 
     if (existing) {
@@ -56,15 +53,21 @@ export const playerService = {
 
     const newPlayer: Player = {
       id: `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name,
+      name: normalizedName,
       createdAt: new Date(),
       lastPlayedAt: new Date(),
-      totalSessions: 0,
-      averageScore: 0,
+      crowd: 0,
+      leagueTier: 'serie-c',
+      unlockedPhonemes: [...INITIAL_UNLOCKED],
+      completedOfficialMatchIds: [],
     };
 
     await db.players.add(newPlayer);
     return newPlayer;
+  },
+
+  async savePlayer(player: Player): Promise<void> {
+    await db.players.put({ ...player, lastPlayedAt: new Date() });
   },
 
   /**
@@ -78,208 +81,28 @@ export const playerService = {
    * Get all players
    */
   async getAllPlayers(): Promise<Player[]> {
-    return db.players.toArray();
+    return db.players.orderBy('lastPlayedAt').reverse().toArray();
   },
 
-  /**
-   * Delete player
-   */
-  async deletePlayer(id: string): Promise<void> {
-    await db.players.delete(id);
-    // Also delete associated sessions and progress
-    const sessions = await db.sessions.where('playerId').equals(id).toArray();
-    for (const session of sessions) {
-      await db.progress.where('sessionId').equals(session.id).delete();
-    }
-    await db.sessions.where('playerId').equals(id).delete();
-  },
-
-  /**
-   * Update player stats
-   */
-  async updatePlayerStats(playerId: string, newSession: GameSession): Promise<void> {
+  async unlockPhoneme(playerId: string, phonemeId: string): Promise<void> {
     const player = await db.players.get(playerId);
     if (!player) return;
 
-    const allSessions = await db.sessions
-      .where('playerId')
-      .equals(playerId)
-      .toArray();
+    if (!player.unlockedPhonemes.includes(phonemeId)) {
+      player.unlockedPhonemes.push(phonemeId);
+      player.lastPlayedAt = new Date();
+      await db.players.put(player);
+    }
+  },
 
-    const totalScore = allSessions.reduce((sum, s) => sum + s.score, 0) + newSession.score;
-    const averageScore = totalScore / (allSessions.length + 1);
+  async addCrowd(playerId: string, amount: number): Promise<void> {
+    const player = await db.players.get(playerId);
+    if (!player) return;
 
-    player.totalSessions = allSessions.length + 1;
-    player.averageScore = averageScore;
+    player.crowd = Math.max(0, player.crowd + amount);
     player.lastPlayedAt = new Date();
 
     await db.players.put(player);
-  },
-};
-
-/**
- * Session Service - CRUD operations for game sessions
- */
-export const sessionService = {
-  /**
-   * Create a new game session
-   */
-  async createSession(playerId: string, difficulty: 'easy' | 'medium' | 'hard'): Promise<GameSession> {
-    const session: GameSession = {
-      id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      playerId,
-      difficulty,
-      score: 0,
-      totalQuestions: 0,
-      correctAnswers: 0,
-      incorrectAnswers: 0,
-      startedAt: new Date(),
-      phonemesLearned: [],
-    };
-
-    await db.sessions.add(session);
-    return session;
-  },
-
-  /**
-   * Update session
-   */
-  async updateSession(session: GameSession): Promise<void> {
-    session.completedAt = new Date();
-    await db.sessions.put(session);
-  },
-
-  /**
-   * Get session by ID
-   */
-  async getSession(id: string): Promise<GameSession | undefined> {
-    return db.sessions.get(id);
-  },
-
-  /**
-   * Get all sessions for a player
-   */
-  async getPlayerSessions(playerId: string): Promise<GameSession[]> {
-    return db.sessions
-      .where('playerId')
-      .equals(playerId)
-      .reverse()
-      .sortBy('startedAt');
-  },
-
-  /**
-   * Get session count for a player
-   */
-  async getPlayerSessionCount(playerId: string): Promise<number> {
-    return db.sessions.where('playerId').equals(playerId).count();
-  },
-
-  /**
-   * Delete session
-   */
-  async deleteSession(id: string): Promise<void> {
-    await db.progress.where('sessionId').equals(id).delete();
-    await db.sessions.delete(id);
-  },
-};
-
-/**
- * Progress Service - Track phoneme learning progress
- */
-export const progressService = {
-  /**
-   * Record phoneme attempt
-   */
-  async recordAttempt(
-    sessionId: string,
-    phonemeId: string,
-    isCorrect: boolean
-  ): Promise<void> {
-    const existing = await db.progress
-      .where('sessionId')
-      .equals(sessionId)
-      .and((p) => p.phonemeId === phonemeId)
-      .first();
-
-    if (existing) {
-      existing.attempts += 1;
-      existing.timestamp = new Date();
-      if (isCorrect && !existing.isCorrect) {
-        existing.isCorrect = true;
-      }
-      await db.progress.put(existing);
-    } else {
-      const progress: SessionProgress = {
-        sessionId,
-        phonemeId,
-        isCorrect,
-        attempts: 1,
-        timestamp: new Date(),
-      };
-      await db.progress.add(progress);
-    }
-  },
-
-  /**
-   * Get progress for a session
-   */
-  async getSessionProgress(sessionId: string): Promise<SessionProgress[]> {
-    return db.progress.where('sessionId').equals(sessionId).toArray();
-  },
-
-  /**
-   * Get phoneme stats for a player
-   */
-  async getPhonemeStats(
-    playerId: string,
-    phonemeId: string
-  ): Promise<{
-    totalAttempts: number;
-    correctAttempts: number;
-    accuracy: number;
-  }> {
-    const sessions = await db.sessions
-      .where('playerId')
-      .equals(playerId)
-      .toArray();
-
-    const sessionIds = sessions.map((s) => s.id);
-
-    let totalAttempts = 0;
-    let correctAttempts = 0;
-
-    for (const sessionId of sessionIds) {
-      const progress = await db.progress
-        .where('sessionId')
-        .equals(sessionId)
-        .and((p) => p.phonemeId === phonemeId)
-        .first();
-
-      if (progress) {
-        totalAttempts += progress.attempts;
-        if (progress.isCorrect) {
-          correctAttempts += progress.attempts;
-        }
-      }
-    }
-
-    const accuracy = totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0;
-
-    return {
-      totalAttempts,
-      correctAttempts,
-      accuracy: Math.round(accuracy),
-    };
-  },
-
-  /**
-   * Clear all data (for testing)
-   */
-  async clearAll(): Promise<void> {
-    await db.players.clear();
-    await db.sessions.clear();
-    await db.progress.clear();
-    await db.customWords.clear();
   },
 };
 
@@ -304,7 +127,9 @@ export const customWordService = {
       wordArray: normalizedWordArray,
       creatorName,
       createdAt: new Date(),
-      playedCount: 0,
+      golacos: 0,
+      faltas: 0,
+      totalMatches: 0,
     };
 
     await db.customWords.add(customWord);
@@ -318,14 +143,43 @@ export const customWordService = {
     return db.customWords.orderBy('createdAt').reverse().toArray();
   },
 
-  /**
-   * Increase the number of times a challenge was played
-   */
-  async incrementPlayedCount(id: string): Promise<void> {
-    const existing = await db.customWords.get(id);
+  async voteWord(wordId: string, vote: 'golaco' | 'falta'): Promise<void> {
+    const existing = await db.customWords.get(wordId);
     if (!existing) return;
 
-    existing.playedCount += 1;
+    if (vote === 'golaco') {
+      existing.golacos += 1;
+    } else {
+      existing.faltas += 1;
+    }
+    existing.totalMatches += 1;
+
     await db.customWords.put(existing);
+  },
+
+  async getRankedWords(): Promise<Array<CustomWord & { approvalRate: number }>> {
+    const words = await db.customWords.toArray();
+
+    return words
+      .filter((word) => word.totalMatches >= MIN_VOTES_FOR_RANKING)
+      .map((word) => {
+        const totalVotes = word.golacos + word.faltas;
+        const approvalRate = totalVotes > 0 ? (word.golacos / totalVotes) * 100 : 0;
+        return { ...word, approvalRate };
+      })
+      .sort((left, right) => {
+        if (right.approvalRate !== left.approvalRate) {
+          return right.approvalRate - left.approvalRate;
+        }
+
+        return right.totalMatches - left.totalMatches;
+      });
+  },
+};
+
+export const debugService = {
+  async clearAll(): Promise<void> {
+    await db.players.clear();
+    await db.customWords.clear();
   },
 };

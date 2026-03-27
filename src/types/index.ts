@@ -1,58 +1,39 @@
 /**
  * Global TypeScript Types for Copa dos Sons
- * Defines all data structures for the game engine, state, and UI
+ * Clean-slate Card Game architecture (Craque Fônico)
  */
 
-export type DifficultyLevel = 'easy' | 'medium' | 'hard';
+export type LeagueTier = 'serie-c' | 'serie-b' | 'serie-a';
 
-export type GameMode = 'quiz' | 'word-builder';
+export type MatchSource = 'official' | 'community';
+
+export type MatchStatus = 'idle' | 'playing' | 'victory' | 'review';
 
 export type AppScreen =
-  | 'menu'
-  | 'levelSelect'
-  | 'game'
-  | 'results'
-  | 'creation'
-  | 'challengeList';
+  | 'vestiario'
+  | 'album'
+  | 'prancheta'
+  | 'campo'
+  | 'match'
+  | 'campeonato';
 
-export interface Phoneme {
-  id: string;
-  phoneme: string; // e.g., "p", "b", "m"
-  difficulty: DifficultyLevel;
+export interface Card {
+  id: string; // canonical id (usually the same as phoneme key)
+  phoneme: string; // visual label on card, ex: "b", "ch", "ã"
+  audioKey: string; // key used in audio sprite index
+  leagueTier: LeagueTier;
   imageUrl: string;
-  audioIndex: number; // Index in the Audio Sprite
-  examples: string[]; // e.g., ["pato", "pé", "pipa"]
+  examples?: string[];
+  isVowel?: boolean;
 }
 
-export interface Level {
+export interface OfficialMatch {
   id: string;
-  difficulty: DifficultyLevel;
-  phonemes: Phoneme[];
-  totalQuestions: number;
-  timeLimit?: number; // in seconds, optional
-  description: string;
-}
-
-export type GameState = 
-  | 'MENU' 
-  | 'LEVEL_SELECT' 
-  | 'PLAYING' 
-  | 'FEEDBACK' 
-  | 'LEVEL_COMPLETE' 
-  | 'VICTORY' 
-  | 'GAME_OVER';
-
-export interface GameSession {
-  id: string;
-  playerId: string;
-  difficulty: DifficultyLevel;
-  score: number;
-  totalQuestions: number;
-  correctAnswers: number;
-  incorrectAnswers: number;
-  startedAt: Date;
-  completedAt?: Date;
-  phonemesLearned: string[];
+  leagueTier: LeagueTier;
+  title: string;
+  targetWord: string[];
+  rewardCardId: string;
+  crowdReward: number;
 }
 
 export interface Player {
@@ -60,8 +41,10 @@ export interface Player {
   name: string;
   createdAt: Date;
   lastPlayedAt?: Date;
-  totalSessions: number;
-  averageScore: number;
+  crowd: number;
+  leagueTier: LeagueTier;
+  unlockedPhonemes: string[];
+  completedOfficialMatchIds: string[];
 }
 
 export interface CustomWord {
@@ -69,50 +52,38 @@ export interface CustomWord {
   wordArray: string[];
   creatorName: string;
   createdAt: Date;
-  playedCount: number;
-}
-
-export interface FeedbackResult {
-  isCorrect: boolean;
-  selectedId: string;
-  correctId: string;
-  currentScore: number;
-  message: string;
+  golacos: number;
+  faltas: number;
+  totalMatches: number;
 }
 
 export interface GameStore {
   // State
-  gameState: GameState;
-  gameMode: GameMode;
-  difficulty: DifficultyLevel | null;
-  currentLevel: Level | null;
-  currentPhonemeIndex: number;
-  score: number;
-  totalQuestions: number;
-  correctAnswers: number;
-  incorrectAnswers: number;
+  currentScreen: AppScreen;
+  matchStatus: MatchStatus;
+  currentMatchSource: MatchSource;
   currentPlayer: Player | null;
-  isAudioPlaying: boolean;
-  lastFeedback: FeedbackResult | null;
+  cardsCatalog: Card[];
+  currentOfficialMatch: OfficialMatch | null;
   targetWord: string[];
+  availableCards: string[];
   assembledSlots: Array<string | null>;
-  availableWordPhonemes: string[];
-  currentChallengeId: string | null;
+  crowdDelta: number;
+  isAudioPlaying: boolean;
+  selectedCommunityWordId: string | null;
 
   // Actions
-  setGameState: (state: GameState) => void;
-  setGameMode: (mode: GameMode) => void;
-  selectDifficulty: (difficulty: DifficultyLevel) => void;
-  initializeGame: (player: Player, difficulty: DifficultyLevel) => void;
-  setWordChallenge: (wordArray: string[], challengeId?: string | null) => void;
-  playPhonemeAudio: () => Promise<void>;
-  answerQuestion: (selectedPhonemeId: string, correctPhonemeId: string) => void;
+  setScreen: (screen: AppScreen) => void;
+  setCurrentPlayer: (player: Player) => void;
+  initializePlayerInventory: (playerName: string) => Player;
+  setCardsCatalog: (cards: Card[]) => void;
+  startOfficialMatch: (match: OfficialMatch) => void;
+  startCommunityMatch: (wordArray: string[], customWordId: string) => void;
   handleDrop: (phonemeId: string, slotIndex: number) => boolean;
   checkWordCompletion: () => boolean;
-  nextPhoneme: () => void;
-  resetGame: () => void;
-  incrementScore: (points: number) => void;
-  setCurrentPlayer: (player: Player) => void;
+  unlockPhoneme: (phonemeId: string) => void;
+  addCrowd: (amount: number) => void;
+  resetCurrentMatch: () => void;
 }
 
 export interface AudioManagerConfig {
@@ -127,12 +98,4 @@ export interface AudioIndex {
     start: number;
     duration: number;
   };
-}
-
-export interface SessionProgress {
-  sessionId: string;
-  phonemeId: string;
-  isCorrect: boolean;
-  attempts: number;
-  timestamp: Date;
 }

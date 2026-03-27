@@ -1,6 +1,6 @@
-export { MenuScreen } from './MenuScreen';
-export { LevelSelectScreen } from './LevelSelectScreen';
-export { GameScreen } from './GameScreen';
-export { ResultsScreen } from './ResultsScreen';
-export { CreationScreen } from './CreationScreen';
-export { ChallengeListScreen } from './ChallengeListScreen';
+export { VestiarioScreen } from './VestiarioScreen';
+export { AlbumScreen } from './AlbumScreen';
+export { PranchetaScreen } from './PranchetaScreen';
+export { CampoScreen } from './CampoScreen';
+export { MatchScreen } from './MatchScreen';
+export { CampeonatoScreen } from './CampeonatoScreen';

@@ -1,191 +1,137 @@
 /**
  * Zustand Store - Global State Management
- * Connects game engine to React UI
+ * Clean-slate Craque Fônico inventory and match state
  */
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { GameStore, DifficultyLevel, Player } from '../types';
+import type { Card, GameStore, OfficialMatch, Player } from '../types';
 import { audioManager } from '../services/audioManager';
-import {
-  generateFeedback,
-  calculateScore,
-  calculateSessionStats,
-  getLevel,
-  validateAnswer,
-} from '../engine';
-import { LEVELS } from '../engine/config/phonemes';
+import { playerService } from '../services/databaseService';
 
-const canonicalTokenMap: Record<string, string> = {
-  ɛ: 'e',
-  ɔ: 'o',
-  ã: 'an',
-  õ: 'on',
-  am: 'an',
-  om: 'on',
-  rr: 'rr',
-  r2: 'rr',
-};
+const INITIAL_UNLOCKED = ['a', 'e', 'i', 'o', 'u'];
 
-const normalizeToken = (value: string): string => {
-  const normalized = value
+const normalizeToken = (value: string): string =>
+  value
     .trim()
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '');
 
-  return canonicalTokenMap[normalized] ?? normalized;
-};
+const DEFAULT_CARDS: Card[] = [
+  { id: 'a', phoneme: 'a', audioKey: 'a', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
+  { id: 'e', phoneme: 'e', audioKey: 'e', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
+  { id: 'i', phoneme: 'i', audioKey: 'i', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
+  { id: 'o', phoneme: 'o', audioKey: 'o', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
+  { id: 'u', phoneme: 'u', audioKey: 'u', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
+  { id: 'b', phoneme: 'b', audioKey: 'b', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
+  { id: 'p', phoneme: 'p', audioKey: 'p', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
+  { id: 'm', phoneme: 'm', audioKey: 'm', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
+  { id: 't', phoneme: 't', audioKey: 't', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
+  { id: 'f', phoneme: 'f', audioKey: 'f', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
+  { id: 'v', phoneme: 'v', audioKey: 'v', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
+  { id: 's', phoneme: 's', audioKey: 's', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
+  { id: 'z', phoneme: 'z', audioKey: 'z', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
+  { id: 'ch', phoneme: 'ch', audioKey: 'ch', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
+  { id: 'nh', phoneme: 'nh', audioKey: 'nh', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
+  { id: 'lh', phoneme: 'lh', audioKey: 'lh', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
+  { id: 'rr', phoneme: 'rr', audioKey: 'rr', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
+];
 
 const initialState = {
-  gameState: 'MENU' as const,
-  gameMode: 'quiz' as const,
-  difficulty: null,
-  currentLevel: null,
-  currentPhonemeIndex: 0,
-  score: 0,
-  totalQuestions: 0,
-  correctAnswers: 0,
-  incorrectAnswers: 0,
+  currentScreen: 'vestiario' as const,
+  matchStatus: 'idle' as const,
+  currentMatchSource: 'official' as const,
   currentPlayer: null,
-  isAudioPlaying: false,
-  lastFeedback: null,
+  cardsCatalog: DEFAULT_CARDS,
+  currentOfficialMatch: null,
   targetWord: [] as string[],
+  availableCards: [] as string[],
   assembledSlots: [] as Array<string | null>,
-  availableWordPhonemes: [] as string[],
-  currentChallengeId: null as string | null,
+  crowdDelta: 0,
+  isAudioPlaying: false,
+  selectedCommunityWordId: null as string | null,
 };
 
 export const useGameStore = create<GameStore>()(
   immer((set, get) => ({
     ...initialState,
 
-    setGameState: (gameState) => {
+    setScreen: (screen) => {
       set((state) => {
-        state.gameState = gameState;
+        state.currentScreen = screen;
       });
     },
 
-    setGameMode: (mode) => {
-      set((state) => {
-        state.gameMode = mode;
-      });
-    },
-
-    selectDifficulty: (difficulty: DifficultyLevel) => {
-      set((state) => {
-        state.difficulty = difficulty;
-        state.currentLevel = getLevel(difficulty);
-        state.totalQuestions = LEVELS[difficulty].totalQuestions;
-      });
-    },
-
-    initializeGame: (player: Player, difficulty: DifficultyLevel) => {
+    setCurrentPlayer: (player) => {
       set((state) => {
         state.currentPlayer = player;
-        state.gameMode = 'quiz';
-        state.difficulty = difficulty;
-        state.currentLevel = getLevel(difficulty);
-        state.gameState = 'PLAYING';
-        state.score = 0;
-        state.correctAnswers = 0;
-        state.incorrectAnswers = 0;
-        state.currentPhonemeIndex = 0;
-        state.totalQuestions = LEVELS[difficulty].totalQuestions;
-        state.lastFeedback = null;
-        state.targetWord = [];
-        state.assembledSlots = [];
-        state.availableWordPhonemes = [];
-        state.currentChallengeId = null;
       });
     },
 
-    setWordChallenge: (wordArray: string[], challengeId: string | null = null) => {
-      const normalized = wordArray
-        .map((item) => normalizeToken(item))
-        .filter((item) => item.length > 0);
+    initializePlayerInventory: (playerName: string): Player => {
+      const player: Player = {
+        id: `player_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        name: playerName,
+        createdAt: new Date(),
+        lastPlayedAt: new Date(),
+        crowd: 0,
+        leagueTier: 'serie-c',
+        unlockedPhonemes: [...INITIAL_UNLOCKED],
+        completedOfficialMatchIds: [],
+      };
 
+      set((state) => {
+        state.currentPlayer = player;
+      });
+
+      return player;
+    },
+
+    setCardsCatalog: (cards) => {
+      set((state) => {
+        state.cardsCatalog = cards;
+      });
+    },
+
+    startOfficialMatch: (match: OfficialMatch) => {
+      const shuffled = [...match.targetWord].sort(() => Math.random() - 0.5);
+
+      set((state) => {
+        state.currentMatchSource = 'official';
+        state.matchStatus = 'playing';
+        state.currentOfficialMatch = match;
+        state.targetWord = [...match.targetWord];
+        state.availableCards = shuffled;
+        state.assembledSlots = new Array(match.targetWord.length).fill(null);
+        state.crowdDelta = 0;
+        state.selectedCommunityWordId = null;
+        state.currentScreen = 'match';
+      });
+    },
+
+    startCommunityMatch: (wordArray: string[], customWordId: string) => {
+      const normalized = wordArray.map((item) => normalizeToken(item)).filter(Boolean);
       const shuffled = [...normalized].sort(() => Math.random() - 0.5);
 
       set((state) => {
-        state.gameMode = 'word-builder';
-        state.gameState = 'PLAYING';
+        state.currentMatchSource = 'community';
+        state.matchStatus = 'playing';
+        state.currentOfficialMatch = null;
         state.targetWord = normalized;
+        state.availableCards = shuffled;
         state.assembledSlots = new Array(normalized.length).fill(null);
-        state.availableWordPhonemes = shuffled;
-        state.currentChallengeId = challengeId;
-        state.totalQuestions = normalized.length;
-        state.currentPhonemeIndex = 0;
-        state.lastFeedback = null;
-        state.correctAnswers = 0;
-        state.incorrectAnswers = 0;
-        state.score = 0;
-      });
-    },
-
-    playPhonemeAudio: async () => {
-      set((state) => {
-        state.isAudioPlaying = true;
-      });
-
-      // Simulate audio playback
-      // In real implementation, this will trigger AudioManager
-      setTimeout(() => {
-        set((state) => {
-          state.isAudioPlaying = false;
-        });
-      }, 1000);
-    },
-
-    answerQuestion: (selectedPhonemeId: string, correctPhonemeId: string) => {
-      const state = get();
-
-      if (state.gameMode === 'word-builder') {
-        return;
-      }
-
-      const isCorrect = validateAnswer(correctPhonemeId, selectedPhonemeId);
-      const scorePoints = calculateScore(state.difficulty || 'easy', 5, isCorrect);
-
-      set((s) => {
-        if (isCorrect) {
-          s.correctAnswers += 1;
-          s.score += scorePoints;
-        } else {
-          s.incorrectAnswers += 1;
-        }
-
-        s.lastFeedback = generateFeedback(
-          isCorrect,
-          selectedPhonemeId,
-          correctPhonemeId,
-          s.score
-        );
-
-        s.gameState = 'FEEDBACK';
-        s.currentPhonemeIndex += 1;
-
-        // Check if game should end
-        const answeredQuestions = s.correctAnswers + s.incorrectAnswers;
-        if (answeredQuestions >= s.totalQuestions) {
-          const stats = calculateSessionStats(s.correctAnswers, s.totalQuestions);
-          s.gameState = stats.isPassed ? 'VICTORY' : 'GAME_OVER';
-        }
-      });
-    },
-
-    nextPhoneme: () => {
-      set((state) => {
-        state.gameState = 'PLAYING';
-        state.lastFeedback = null;
+        state.selectedCommunityWordId = customWordId;
+        state.crowdDelta = 0;
+        state.currentScreen = 'match';
       });
     },
 
     handleDrop: (phonemeId: string, slotIndex: number) => {
       const state = get();
 
-      if (state.gameMode !== 'word-builder') {
+      if (state.matchStatus !== 'playing') {
         return false;
       }
 
@@ -204,17 +150,14 @@ export const useGameStore = create<GameStore>()(
       set((draft) => {
         if (isCorrect) {
           draft.assembledSlots[slotIndex] = expected;
-          draft.correctAnswers += 1;
-          draft.score += 25;
+          draft.crowdDelta += 100;
 
-          const consumedIndex = draft.availableWordPhonemes.findIndex(
+          const consumedIndex = draft.availableCards.findIndex(
             (item) => normalizeToken(item) === normalized
           );
           if (consumedIndex >= 0) {
-            draft.availableWordPhonemes.splice(consumedIndex, 1);
+            draft.availableCards.splice(consumedIndex, 1);
           }
-        } else {
-          draft.incorrectAnswers += 1;
         }
       });
 
@@ -228,7 +171,7 @@ export const useGameStore = create<GameStore>()(
     checkWordCompletion: () => {
       const state = get();
 
-      if (state.gameMode !== 'word-builder') {
+      if (state.matchStatus !== 'playing') {
         return false;
       }
 
@@ -238,51 +181,63 @@ export const useGameStore = create<GameStore>()(
 
       if (isCompleted) {
         set((draft) => {
-          draft.gameState = 'VICTORY';
-          draft.lastFeedback = {
-            isCorrect: true,
-            selectedId: 'word-builder',
-            correctId: 'word-builder',
-            currentScore: draft.score,
-            message: 'GOOOOOL! Palavra montada com sucesso! ⚽',
-          };
+          draft.matchStatus = 'victory';
         });
+
+        const { currentOfficialMatch, currentPlayer } = get();
+
+        if (state.currentMatchSource === 'official' && currentOfficialMatch?.rewardCardId) {
+          get().unlockPhoneme(currentOfficialMatch.rewardCardId);
+        }
+
+        if (currentPlayer) {
+          void playerService.addCrowd(currentPlayer.id, state.crowdDelta);
+        }
+
         void audioManager.playGoalSound();
       }
 
       return isCompleted;
     },
 
-    resetGame: () => {
+    unlockPhoneme: (phonemeId: string) => {
+      const normalized = normalizeToken(phonemeId);
+
       set((state) => {
-        state.gameState = 'MENU';
-        state.gameMode = 'quiz';
-        state.difficulty = null;
-        state.currentLevel = null;
-        state.currentPhonemeIndex = 0;
-        state.score = 0;
-        state.totalQuestions = 0;
-        state.correctAnswers = 0;
-        state.incorrectAnswers = 0;
-        state.currentPlayer = null;
-        state.isAudioPlaying = false;
-        state.lastFeedback = null;
+        if (!state.currentPlayer) return;
+
+        if (!state.currentPlayer.unlockedPhonemes.includes(normalized)) {
+          state.currentPlayer.unlockedPhonemes.push(normalized);
+        }
+      });
+
+      const player = get().currentPlayer;
+      if (player) {
+        void playerService.unlockPhoneme(player.id, normalized);
+      }
+    },
+
+    addCrowd: (amount: number) => {
+      set((state) => {
+        if (!state.currentPlayer) return;
+        state.currentPlayer.crowd = Math.max(0, state.currentPlayer.crowd + amount);
+      });
+
+      const player = get().currentPlayer;
+      if (player) {
+        void playerService.addCrowd(player.id, amount);
+      }
+    },
+
+    resetCurrentMatch: () => {
+      set((state) => {
+        state.matchStatus = 'idle';
+        state.currentOfficialMatch = null;
         state.targetWord = [];
+        state.availableCards = [];
         state.assembledSlots = [];
-        state.availableWordPhonemes = [];
-        state.currentChallengeId = null;
-      });
-    },
-
-    incrementScore: (points: number) => {
-      set((state) => {
-        state.score += points;
-      });
-    },
-
-    setCurrentPlayer: (player: Player) => {
-      set((state) => {
-        state.currentPlayer = player;
+        state.crowdDelta = 0;
+        state.selectedCommunityWordId = null;
       });
     },
   }))

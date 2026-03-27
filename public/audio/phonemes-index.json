@@ -127,8 +127,12 @@
     "start": 90000,
     "duration": 1741
   },
-  "z": {
+  "x": {
     "start": 93000,
+    "duration": 1416
+  },
+  "z": {
+    "start": 96000,
     "duration": 1765
   }
 }

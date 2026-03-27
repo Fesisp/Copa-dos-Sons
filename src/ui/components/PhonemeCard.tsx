@@ -5,18 +5,19 @@
 
 import React from 'react';
 import { motion, type PanInfo } from 'framer-motion';
-import type { Phoneme } from '../../types';
+import type { Card } from '../../types';
 
 interface PhonemeCardProps {
-  phoneme?: Phoneme;
+  phoneme?: Card;
   id?: string;
   imageUrl?: string;
   altText?: string;
   status?: 'idle' | 'correct' | 'incorrect';
+  variant?: 'normal' | 'blocked' | 'shiny';
   isSelected?: boolean;
   isCorrect?: boolean;
   isWrong?: boolean;
-  onClick?: ((phoneme: Phoneme) => void) | ((id: string) => void);
+  onClick?: ((phoneme: Card) => void) | ((id: string) => void);
   disabled?: boolean;
   draggable?: boolean;
   onDragMove?: (phonemeId: string, point: { x: number; y: number }) => void;
@@ -29,6 +30,7 @@ export const PhonemeCard: React.FC<PhonemeCardProps> = ({
   imageUrl,
   altText,
   status,
+  variant = 'normal',
   isSelected = false,
   isCorrect = false,
   isWrong = false,
@@ -47,7 +49,7 @@ export const PhonemeCard: React.FC<PhonemeCardProps> = ({
   const handleClick = () => {
     if (!disabled && onClick) {
       if (phoneme) {
-        (onClick as (phoneme: Phoneme) => void)(phoneme);
+        (onClick as (phoneme: Card) => void)(phoneme);
       } else if (resolvedId) {
         (onClick as (id: string) => void)(resolvedId);
       }
@@ -66,6 +68,14 @@ export const PhonemeCard: React.FC<PhonemeCardProps> = ({
     incorrect: 'border-red-500 border-4 opacity-50',
   };
 
+  const variantClasses = {
+    normal: 'opacity-100 saturate-100',
+    blocked: 'opacity-55 grayscale',
+    shiny: 'ring-4 ring-yellow-300 shadow-[0_0_35px_rgba(250,204,21,0.8)]',
+  };
+
+  const isBlocked = variant === 'blocked';
+
   const handleDrag = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (!resolvedId || !onDragMove) return;
     onDragMove(resolvedId, info.point);
@@ -79,14 +89,14 @@ export const PhonemeCard: React.FC<PhonemeCardProps> = ({
   return (
     <motion.div
       animate={animations[resolvedStatus]}
-      whileHover={!disabled && resolvedStatus === 'idle' ? { scale: 1.05 } : {}}
-      whileTap={!disabled && resolvedStatus === 'idle' ? { scale: 0.95 } : {}}
-      drag={draggable && !disabled && resolvedStatus === 'idle'}
+      whileHover={!disabled && !isBlocked && resolvedStatus === 'idle' ? { scale: 1.05 } : {}}
+      whileTap={!disabled && !isBlocked && resolvedStatus === 'idle' ? { scale: 0.95 } : {}}
+      drag={draggable && !disabled && !isBlocked && resolvedStatus === 'idle'}
       dragSnapToOrigin={draggable}
       onDrag={draggable ? handleDrag : undefined}
       onDragEnd={draggable ? handleDragEnd : undefined}
       onClick={handleClick}
-      className={`relative cursor-pointer rounded-2xl bg-white shadow-xl overflow-hidden ${disabled ? 'cursor-not-allowed' : ''} ${borderColors[resolvedStatus]}`}
+      className={`relative cursor-pointer rounded-2xl bg-white shadow-xl overflow-hidden ${disabled || isBlocked ? 'cursor-not-allowed' : ''} ${borderColors[resolvedStatus]} ${variantClasses[variant]}`}
     >
       <div className="aspect-square w-full p-4 flex items-center justify-center">
         {!imageFailed ? (
@@ -112,6 +122,12 @@ export const PhonemeCard: React.FC<PhonemeCardProps> = ({
       {!!resolvedAltText && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-neutral-900/70 text-white px-3 py-1 rounded-full text-sm font-display font-bold uppercase">
           {resolvedAltText}
+        </div>
+      )}
+
+      {variant === 'blocked' && (
+        <div className="absolute inset-0 bg-neutral-900/40 flex items-center justify-center">
+          <span className="font-display font-bold text-white text-lg">BLOQUEADO</span>
         </div>
       )}
 
