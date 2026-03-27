@@ -16,6 +16,28 @@ import {
 } from '../engine';
 import { LEVELS } from '../engine/config/phonemes';
 
+const canonicalTokenMap: Record<string, string> = {
+  ɛ: 'e',
+  ɔ: 'o',
+  ã: 'an',
+  õ: 'on',
+  am: 'an',
+  om: 'on',
+  rr: 'rr',
+  r2: 'rr',
+};
+
+const normalizeToken = (value: string): string => {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '');
+
+  return canonicalTokenMap[normalized] ?? normalized;
+};
+
 const initialState = {
   gameState: 'MENU' as const,
   gameMode: 'quiz' as const,
@@ -81,7 +103,7 @@ export const useGameStore = create<GameStore>()(
 
     setWordChallenge: (wordArray: string[], challengeId: string | null = null) => {
       const normalized = wordArray
-        .map((item) => item.trim().toLowerCase())
+        .map((item) => normalizeToken(item))
         .filter((item) => item.length > 0);
 
       const shuffled = [...normalized].sort(() => Math.random() - 0.5);
@@ -175,15 +197,22 @@ export const useGameStore = create<GameStore>()(
         return false;
       }
 
-      const normalized = phonemeId.trim().toLowerCase();
-      const expected = state.targetWord[slotIndex];
+      const normalized = normalizeToken(phonemeId);
+      const expected = normalizeToken(state.targetWord[slotIndex]);
       const isCorrect = normalized === expected;
 
       set((draft) => {
         if (isCorrect) {
-          draft.assembledSlots[slotIndex] = normalized;
+          draft.assembledSlots[slotIndex] = expected;
           draft.correctAnswers += 1;
           draft.score += 25;
+
+          const consumedIndex = draft.availableWordPhonemes.findIndex(
+            (item) => normalizeToken(item) === normalized
+          );
+          if (consumedIndex >= 0) {
+            draft.availableWordPhonemes.splice(consumedIndex, 1);
+          }
         } else {
           draft.incorrectAnswers += 1;
         }

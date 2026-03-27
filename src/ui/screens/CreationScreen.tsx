@@ -84,7 +84,11 @@ export const CreationScreen: React.FC<CreationScreenProps> = ({ onNavigate }) =>
   }, [keyboardKeys, uniquePhonemes]);
 
   const handleAddPhoneme = (phoneme: Phoneme) => {
-    setWordBuilder((prev) => [...prev, phoneme.phoneme.toLowerCase()]);
+    setWordBuilder((prev) => {
+      const next = [...prev, phoneme.phoneme.toLowerCase()];
+      void audioManager.playWord(next, 60);
+      return next;
+    });
     setFeedbackMessage(null);
   };
 

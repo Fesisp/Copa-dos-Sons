@@ -9,9 +9,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
-        'favicon.ico',
-        'apple-touch-icon.png',
-        'masked-icon.svg',
+        'favicon.svg',
+        'icon-192x192.png',
+        'icon-512x512.png',
+        'maskable-icon.png',
       ],
       manifest: {
         name: 'Copa dos Sons',

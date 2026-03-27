@@ -23,7 +23,7 @@ const keyAliases: Record<string, string[]> = {
   'ɔ': ['o', 'oh'],
   'ã': ['an', 'am'],
   'õ': ['on', 'om'],
-  x: ['ch'],
+  'x': ['ch'],
 };
 
 const nonPhonemeKeys = new Set(['acerto', 'erro', 'gol', 'comecar', 'completar', 'silence']);

@@ -38,6 +38,7 @@ export const PhonemeCard: React.FC<PhonemeCardProps> = ({
   onDragMove,
   onDragEndPosition,
 }) => {
+  const [imageFailed, setImageFailed] = React.useState(false);
   const resolvedId = phoneme?.id ?? id ?? '';
   const resolvedImageUrl = phoneme?.imageUrl ?? imageUrl ?? '/images/placeholder.png';
   const resolvedAltText = phoneme?.phoneme ?? altText ?? resolvedId;
@@ -88,15 +89,24 @@ export const PhonemeCard: React.FC<PhonemeCardProps> = ({
       className={`relative cursor-pointer rounded-2xl bg-white shadow-xl overflow-hidden ${disabled ? 'cursor-not-allowed' : ''} ${borderColors[resolvedStatus]}`}
     >
       <div className="aspect-square w-full p-4 flex items-center justify-center">
-        <img
-          src={resolvedImageUrl}
-          alt={resolvedAltText}
-          className="w-full h-full object-contain drop-shadow-md"
-          draggable={false}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = '/images/placeholder.png';
-          }}
-        />
+        {!imageFailed ? (
+          <img
+            src={resolvedImageUrl}
+            alt={resolvedAltText}
+            className="w-full h-full object-contain drop-shadow-md"
+            draggable={false}
+            onError={() => {
+              setImageFailed(true);
+            }}
+          />
+        ) : (
+          <div className="w-full h-full rounded-xl bg-gradient-to-br from-field-100 to-uniform-100 flex flex-col items-center justify-center border-2 border-dashed border-field-400">
+            <span className="text-5xl">⚽</span>
+            <span className="font-display font-bold text-3xl text-field-700 uppercase mt-1">
+              {resolvedAltText}
+            </span>
+          </div>
+        )}
       </div>
 
       {!!resolvedAltText && (
