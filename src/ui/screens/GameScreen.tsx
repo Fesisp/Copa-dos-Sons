@@ -95,7 +95,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
   const playAudio = async () => {
     if (gameMode === 'word-builder') {
       try {
-        await audioManager.playPhonemeSequence(targetWord);
+        await audioManager.playWord(targetWord);
       } catch (error) {
         console.error('Failed to play word audio:', error);
       }
@@ -165,7 +165,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
               🎮 Jogo
             </h1>
             <p className="text-sm text-neutral-600">
-              Questão {answeredQuestions + 1} de {totalQuestions}
+              {gameMode === 'word-builder'
+                ? `Slot ${Math.min(wordProgress + 1, totalQuestions)} de ${totalQuestions}`
+                : `Questão ${answeredQuestions + 1} de ${totalQuestions}`}
             </p>
           </div>
           <div className="text-right">

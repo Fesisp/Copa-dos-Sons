@@ -1,0 +1,134 @@
+{
+  "a": {
+    "start": 0,
+    "duration": 952
+  },
+  "acerto": {
+    "start": 2000,
+    "duration": 2273
+  },
+  "an": {
+    "start": 6000,
+    "duration": 789
+  },
+  "b": {
+    "start": 8000,
+    "duration": 952
+  },
+  "ch": {
+    "start": 10000,
+    "duration": 1416
+  },
+  "comecar": {
+    "start": 13000,
+    "duration": 1488
+  },
+  "d": {
+    "start": 16000,
+    "duration": 1207
+  },
+  "e": {
+    "start": 19000,
+    "duration": 813
+  },
+  "em": {
+    "start": 21000,
+    "duration": 1045
+  },
+  "erro": {
+    "start": 24000,
+    "duration": 1056
+  },
+  "f": {
+    "start": 27000,
+    "duration": 1765
+  },
+  "g": {
+    "start": 30000,
+    "duration": 1254
+  },
+  "gol": {
+    "start": 33000,
+    "duration": 4440
+  },
+  "i": {
+    "start": 39000,
+    "duration": 813
+  },
+  "im": {
+    "start": 41000,
+    "duration": 1068
+  },
+  "j": {
+    "start": 44000,
+    "duration": 1997
+  },
+  "k": {
+    "start": 47000,
+    "duration": 1207
+  },
+  "l": {
+    "start": 50000,
+    "duration": 1486
+  },
+  "lh": {
+    "start": 53000,
+    "duration": 1695
+  },
+  "m": {
+    "start": 56000,
+    "duration": 1393
+  },
+  "n": {
+    "start": 59000,
+    "duration": 1556
+  },
+  "nh": {
+    "start": 62000,
+    "duration": 1997
+  },
+  "o": {
+    "start": 65000,
+    "duration": 813
+  },
+  "on": {
+    "start": 67000,
+    "duration": 1324
+  },
+  "p": {
+    "start": 70000,
+    "duration": 952
+  },
+  "r": {
+    "start": 72000,
+    "duration": 1765
+  },
+  "rr": {
+    "start": 75000,
+    "duration": 1138
+  },
+  "s": {
+    "start": 78000,
+    "duration": 2345
+  },
+  "t": {
+    "start": 82000,
+    "duration": 1393
+  },
+  "u": {
+    "start": 85000,
+    "duration": 952
+  },
+  "um": {
+    "start": 87000,
+    "duration": 1138
+  },
+  "v": {
+    "start": 90000,
+    "duration": 1741
+  },
+  "z": {
+    "start": 93000,
+    "duration": 1765
+  }
+}

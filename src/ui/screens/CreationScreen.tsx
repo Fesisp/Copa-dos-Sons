@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button, PhonemeCard } from '../components';
 import { ALL_PHONEMES } from '../../engine/config/phonemes';
@@ -16,6 +16,7 @@ export const CreationScreen: React.FC<CreationScreenProps> = ({ onNavigate }) =>
   const [isSaving, setIsSaving] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [keyboardKeys, setKeyboardKeys] = useState<string[]>([]);
 
   const currentPlayer = useGameStore((s) => s.currentPlayer);
 
@@ -31,6 +32,57 @@ export const CreationScreen: React.FC<CreationScreenProps> = ({ onNavigate }) =>
     return Array.from(map.values());
   }, []);
 
+  useEffect(() => {
+    const loadKeyboard = async () => {
+      try {
+        await audioManager.initialize();
+      } catch {
+        // Fallback to mock index in AudioManager
+      }
+
+      const keys = audioManager.getAvailablePhonemeKeys();
+      if (keys.length > 0) {
+        setKeyboardKeys(keys);
+      }
+    };
+
+    loadKeyboard();
+  }, []);
+
+  const keyboardPhonemes = useMemo(() => {
+    const candidates = keyboardKeys.length > 0 ? keyboardKeys : uniquePhonemes.map((item) => item.phoneme.toLowerCase());
+
+    return candidates.map((key, index) => {
+      const normalizedKey = key.toLowerCase();
+      const known = uniquePhonemes.find((item) => {
+        const value = item.phoneme.toLowerCase();
+        if (value === normalizedKey) return true;
+        if (normalizedKey === 'an' && value === 'ã') return true;
+        if (normalizedKey === 'on' && value === 'õ') return true;
+        if (normalizedKey === 'e' && value === 'ɛ') return true;
+        if (normalizedKey === 'o' && value === 'ɔ') return true;
+        return false;
+      });
+
+      if (known) {
+        return {
+          ...known,
+          id: `keyboard-${normalizedKey}-${index}`,
+          phoneme: normalizedKey,
+        } satisfies Phoneme;
+      }
+
+      return {
+        id: `keyboard-${normalizedKey}-${index}`,
+        phoneme: normalizedKey,
+        difficulty: 'easy',
+        imageUrl: '/images/placeholder.png',
+        audioIndex: 0,
+        examples: [normalizedKey],
+      } satisfies Phoneme;
+    });
+  }, [keyboardKeys, uniquePhonemes]);
+
   const handleAddPhoneme = (phoneme: Phoneme) => {
     setWordBuilder((prev) => [...prev, phoneme.phoneme.toLowerCase()]);
     setFeedbackMessage(null);
@@ -43,7 +95,7 @@ export const CreationScreen: React.FC<CreationScreenProps> = ({ onNavigate }) =>
     setFeedbackMessage(null);
 
     try {
-      await audioManager.playPhonemeSequence(wordBuilder);
+      await audioManager.playWord(wordBuilder);
     } catch (error) {
       console.error('Falha ao tocar sequência:', error);
       setFeedbackMessage('Não foi possível tocar esta jogada agora.');
@@ -105,7 +157,7 @@ export const CreationScreen: React.FC<CreationScreenProps> = ({ onNavigate }) =>
 
           <div className="flex flex-wrap gap-3 mt-5">
             <Button variant="secondary" size="md" onClick={handlePlayWord} disabled={wordBuilder.length === 0 || isPlaying}>
-              {isPlaying ? '🔊 Tocando...' : '🔊 Ouvir a Jogada'}
+              {isPlaying ? '🔊 Tocando...' : '🔊 Ouvir Invenção'}
             </Button>
             <Button variant="success" size="md" onClick={handleSaveWord} disabled={wordBuilder.length === 0 || isSaving}>
               {isSaving ? 'Salvando...' : '💾 Salvar Jogada'}
@@ -132,9 +184,12 @@ export const CreationScreen: React.FC<CreationScreenProps> = ({ onNavigate }) =>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <p className="font-display font-bold text-lg text-neutral-700 mb-4">Teclado de Fonemas</p>
+          <p className="font-display font-bold text-lg text-neutral-700 mb-2">Teclado de Fonemas</p>
+          <p className="text-sm text-neutral-500 mb-4">
+            {keyboardPhonemes.length} fonemas disponíveis para criar jogadas
+          </p>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
-            {uniquePhonemes.map((phoneme) => (
+            {keyboardPhonemes.map((phoneme) => (
               <PhonemeCard
                 key={phoneme.id}
                 phoneme={phoneme}

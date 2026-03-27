@@ -18,6 +18,21 @@ interface AudioSpriteHowlerJson {
   spritemap?: Record<string, AudioSpriteHowlerEntry>;
 }
 
+const keyAliases: Record<string, string[]> = {
+  'ɛ': ['e', 'eh'],
+  'ɔ': ['o', 'oh'],
+  'ã': ['an', 'am'],
+  'õ': ['on', 'om'],
+  x: ['ch'],
+};
+
+const nonPhonemeKeys = new Set(['acerto', 'erro', 'gol', 'comecar', 'completar', 'silence']);
+
+const displayAliases: Record<string, string> = {
+  an: 'ã',
+  on: 'õ',
+};
+
 class AudioManager {
   private howl: Howl | null = null;
   private audioIndex: AudioIndex = {};
@@ -95,6 +110,18 @@ class AudioManager {
   }
 
   /**
+   * Normalize incoming token to canonical audio key
+   */
+  private normalizeKeyToken(token: string): string {
+    return token
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '');
+  }
+
+  /**
    * Get mock audio index for development
    */
   private getMockAudioIndex(): AudioIndex {
@@ -135,9 +162,15 @@ class AudioManager {
    * Initialize Howler instance with sprite
    */
   private initializeHowler(): void {
+    const spriteMap: Record<string, [number, number]> = {};
+
+    Object.entries(this.audioIndex).forEach(([key, value]) => {
+      spriteMap[key] = [value.start, value.duration];
+    });
+
     this.howl = new Howl({
       src: [this.config.spriteUrl],
-      sprite: this.audioIndex as unknown as Record<string, [number, number]>,
+      sprite: spriteMap,
       volume: this.config.volume,
       preload: this.config.preload,
       onloaderror: (_soundId: number, error: unknown) => {
@@ -158,7 +191,9 @@ class AudioManager {
       throw new Error('Howler not initialized');
     }
 
-    if (!(phonemeKey in this.audioIndex)) {
+    const resolvedKey = this.resolveAudioKey(phonemeKey);
+
+    if (!resolvedKey || !(resolvedKey in this.audioIndex)) {
       console.warn(`Phoneme key "${phonemeKey}" not found in audio index`);
       return;
     }
@@ -168,12 +203,27 @@ class AudioManager {
 
     // Play the sprite
     return new Promise((resolve) => {
-      this.howl!.play(phonemeKey);
+      this.howl!.play(resolvedKey);
       
       // Resolve when audio finishes or after max duration
-      const duration = this.audioIndex[phonemeKey].duration;
+      const duration = this.audioIndex[resolvedKey].duration;
       setTimeout(() => resolve(), duration + 100);
     });
+  }
+
+  /**
+   * Resolve requested key to an available key in index
+   */
+  private resolveAudioKey(requestedKey: string): string | null {
+    const normalized = this.normalizeKeyToken(requestedKey);
+
+    if (normalized in this.audioIndex) {
+      return normalized;
+    }
+
+    const aliases = keyAliases[normalized] ?? [];
+    const match = aliases.find((alias) => alias in this.audioIndex);
+    return match ?? null;
   }
 
   /**
@@ -181,35 +231,54 @@ class AudioManager {
    */
   async playPhonemeSequence(phonemeKeys: string[], gapMs = 80): Promise<void> {
     for (const rawKey of phonemeKeys) {
-      const key = rawKey.trim().toLowerCase();
+      const key = this.normalizeKeyToken(rawKey);
       await this.playPhoneme(key);
       await new Promise((resolve) => setTimeout(resolve, gapMs));
     }
   }
 
   /**
+   * Alias semântico para o Modo Criação
+   */
+  async playWord(wordArray: string[], gapMs = 80): Promise<void> {
+    await this.playPhonemeSequence(wordArray, gapMs);
+  }
+
+  /**
+   * Get available phoneme keys from loaded index
+   */
+  getAvailablePhonemeKeys(): string[] {
+    return Object.keys(this.audioIndex)
+      .filter((key) => !nonPhonemeKeys.has(key))
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  /**
+   * Presentational label for a key in UI
+   */
+  getDisplayLabel(key: string): string {
+    return displayAliases[key] ?? key;
+  }
+
+  /**
    * Play success feedback sound
    */
   async playSuccessSound(): Promise<void> {
-    // Placeholder for success sound
-    console.log('🎵 Success sound would play here');
-    return new Promise((resolve) => setTimeout(resolve, 500));
+    await this.playPhoneme('acerto');
   }
 
   /**
    * Play error feedback sound
    */
   async playErrorSound(): Promise<void> {
-    // Placeholder for error sound
-    console.log('❌ Error sound would play here');
-    return new Promise((resolve) => setTimeout(resolve, 500));
+    await this.playPhoneme('erro');
   }
 
   /**
    * Play goal feedback sound
    */
   async playGoalSound(): Promise<void> {
-    await this.playSuccessSound();
+    await this.playPhoneme('gol');
   }
 
   /**

@@ -145,7 +145,7 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ onNavigate }) => {
         transition={{ duration: 0.5, delay: 0.3 }}
       >
         <Button variant="secondary" size="md" onClick={() => onNavigate('challengeList')}>
-          🏆 Desafios da Turma
+          🏆 Jogar Palavras da Turma
         </Button>
         <Button variant="primary" size="md" onClick={() => onNavigate('creation')}>
           🧩 Centro de Treinamento
