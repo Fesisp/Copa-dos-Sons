@@ -27,7 +27,7 @@ export const PranchetaScreen: React.FC<PranchetaScreenProps> = ({ onNavigate }) 
         </div>
 
         <div className="bg-white rounded-2xl p-5 shadow-lg mb-5">
-          <p className="text-neutral-700 font-display font-bold mb-3">Jogada atual</p>
+          <p className="text-neutral-700 font-display font-bold mb-3">Linha de Passe</p>
           <div className="flex flex-wrap gap-2 min-h-12">
             {word.length === 0 ? (
               <span className="text-neutral-500">Monte sua jogada com as cartas desbloqueadas.</span>
@@ -41,8 +41,8 @@ export const PranchetaScreen: React.FC<PranchetaScreenProps> = ({ onNavigate }) 
           </div>
 
           <div className="flex flex-wrap gap-3 mt-4">
-            <Button variant="primary" size="md" disabled={word.length === 0} onClick={() => void audioManager.playWord(word)}>
-              Testar Jogada
+            <Button variant="primary" size="md" disabled={word.length === 0} onClick={() => void audioManager.playWordSequence(word)}>
+              Ouvir Jogada
             </Button>
             <Button
               variant="success"
@@ -60,7 +60,7 @@ export const PranchetaScreen: React.FC<PranchetaScreenProps> = ({ onNavigate }) 
                 }
               }}
             >
-              Salvar Jogada
+              Salvar Tática
             </Button>
             <Button variant="danger" size="md" disabled={word.length === 0} onClick={() => setWord((prev) => prev.slice(0, -1))}>
               Desfazer

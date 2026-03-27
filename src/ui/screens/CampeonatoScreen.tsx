@@ -44,7 +44,10 @@ export const CampeonatoScreen: React.FC<CampeonatoScreenProps> = ({ onNavigate }
               <div key={word.id} className="bg-white rounded-2xl p-5 shadow-lg">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <div>
-                    <h2 className="font-display text-xl font-bold text-field-700">Jogada de {word.creatorName}</h2>
+                    <h2 className="font-display text-xl font-bold text-field-700">
+                      Tática do {word.creatorName}
+                      {'approvalRate' in word && typeof word.approvalRate === 'number' ? ` - ${Math.round(word.approvalRate)}% Golaço` : ''}
+                    </h2>
                     <p className="text-sm text-neutral-600 uppercase tracking-wide">{word.wordArray.join(' • ')}</p>
                     <p className="text-xs text-neutral-500 mt-1">
                       👍 {word.golacos} · 👎 {word.faltas} · {word.totalMatches} avaliações

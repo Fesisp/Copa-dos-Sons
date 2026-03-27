@@ -93,6 +93,9 @@ export const PhonemeCard: React.FC<PhonemeCardProps> = ({
       whileTap={!disabled && !isBlocked && resolvedStatus === 'idle' ? { scale: 0.95 } : {}}
       drag={draggable && !disabled && !isBlocked && resolvedStatus === 'idle'}
       dragSnapToOrigin={draggable}
+      dragElastic={0.35}
+      dragMomentum={false}
+      dragTransition={{ bounceStiffness: 420, bounceDamping: 18 }}
       onDrag={draggable ? handleDrag : undefined}
       onDragEnd={draggable ? handleDragEnd : undefined}
       onClick={handleClick}

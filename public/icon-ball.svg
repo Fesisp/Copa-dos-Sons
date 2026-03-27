@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Bola de futebol">
+  <defs>
+    <radialGradient id="g" cx="35%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e5e7eb"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#16a34a"/>
+  <circle cx="256" cy="256" r="180" fill="url(#g)" stroke="#111827" stroke-width="12"/>
+  <polygon points="256,178 294,205 280,248 232,248 218,205" fill="#111827"/>
+  <path d="M256 178l-58-18-42 32 16 56m84-70 58-18 42 32-16 56m-124 0-40 30 22 52 58 2 22-52-40-30m84 0 40 30-22 52-58 2" fill="none" stroke="#111827" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

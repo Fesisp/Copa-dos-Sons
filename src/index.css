@@ -110,6 +110,43 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: #16a34a;
 }
+
+.stadium-bg {
+  position: relative;
+  background:
+    radial-gradient(circle at 10% -10%, rgba(255, 255, 255, 0.45), transparent 30%),
+    radial-gradient(circle at 90% -15%, rgba(255, 255, 255, 0.45), transparent 32%),
+    linear-gradient(180deg, #14532d 0%, #166534 42%, #15803d 100%);
+}
+
+.stadium-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.06) 0px,
+      rgba(255, 255, 255, 0.06) 80px,
+      rgba(255, 255, 255, 0.015) 80px,
+      rgba(255, 255, 255, 0.015) 160px
+    ),
+    linear-gradient(90deg, transparent 49.6%, rgba(255, 255, 255, 0.35) 49.6%, rgba(255, 255, 255, 0.35) 50.4%, transparent 50.4%);
+  mix-blend-mode: soft-light;
+}
+
+.stadium-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 120px, rgba(255, 255, 255, 0.32) 121px 124px, transparent 125px),
+    radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.24), transparent 30%),
+    radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.24), transparent 30%);
+  opacity: 0.6;
+}
 #root {
   width: 1126px;
   max-width: 100%;

@@ -10,49 +10,75 @@ interface VestiarioScreenProps {
 
 export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) => {
   const player = useGameStore((s) => s.currentPlayer);
+  const unlockedCount = player?.unlockedPhonemes.length ?? 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-field-100 to-uniform-100 p-6">
-      <motion.div className="max-w-5xl mx-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <div className="min-h-screen stadium-bg p-6">
+      <motion.div className="max-w-6xl mx-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="text-center mb-8">
           <div className="text-6xl mb-2">🏟️</div>
-          <h1 className="font-display text-4xl font-bold text-field-800">Vestiário do Craque Fônico</h1>
+          <h1 className="font-display text-4xl font-bold text-white drop-shadow-lg">Vestiário do Craque Fônico</h1>
           <p className="text-neutral-700 mt-2">
             {player ? `${player.name}, sua torcida atual: ${player.crowd} torcedores` : 'Entre em campo e monte jogadas fonônicas!'}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <motion.div className="bg-white rounded-2xl p-6 shadow-xl" whileHover={{ scale: 1.02 }}>
-            <div className="text-4xl mb-2">🗄️</div>
-            <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Armário da Copa</h2>
-            <p className="text-sm text-neutral-600 mb-4">Veja suas cartas desbloqueadas e ouça cada som.</p>
+        <motion.div
+          className="mb-6 rounded-3xl bg-white/90 backdrop-blur p-6 shadow-2xl border border-white/70"
+          initial={{ y: -12, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            <div>
+              <p className="text-sm text-neutral-500">Saldo da Torcida</p>
+              <p className="font-display text-4xl text-field-700 font-extrabold">{player?.crowd ?? 0}</p>
+            </div>
+            <div>
+              <p className="text-sm text-neutral-500">Cartas Liberadas</p>
+              <p className="font-display text-3xl text-uniform-700 font-bold">{unlockedCount}/31</p>
+            </div>
+            <div>
+              <p className="text-sm text-neutral-500">Elenco</p>
+              <p className="font-display text-xl text-neutral-700 font-bold">{player?.name ?? 'Novo Craque'}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <motion.div className="bg-white rounded-2xl p-6 shadow-xl border-l-8 border-field-500" whileHover={{ scale: 1.02 }}>
+            <div className="text-4xl mb-2">🗂️</div>
+            <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Meu Álbum</h2>
+            <p className="text-sm text-neutral-600 mb-4">Inventário completo com todos os 31 fonemas.</p>
             <Button variant="secondary" size="md" onClick={() => onNavigate('album')} className="w-full">
-              Abrir Álbum
+              Abrir Meu Álbum
             </Button>
           </motion.div>
 
-          <motion.div className="bg-white rounded-2xl p-6 shadow-xl" whileHover={{ scale: 1.02 }}>
+          <motion.div className="bg-white rounded-2xl p-6 shadow-xl border-l-8 border-success-500" whileHover={{ scale: 1.02 }}>
+            <div className="text-4xl mb-2">🏃</div>
+            <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Ir para o Treino</h2>
+            <p className="text-sm text-neutral-600 mb-4">Jogue partidas oficiais para ganhar cartas novas.</p>
+            <Button variant="success" size="md" onClick={() => onNavigate('campo')} className="w-full">
+              Ir para o Treino
+            </Button>
+          </motion.div>
+
+          <motion.div className="bg-white rounded-2xl p-6 shadow-xl border-l-8 border-uniform-500" whileHover={{ scale: 1.02 }}>
             <div className="text-4xl mb-2">📋</div>
-            <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Quadro Tático</h2>
+            <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Prancheta</h2>
             <p className="text-sm text-neutral-600 mb-4">Crie jogadas com as cartas que já conquistou.</p>
             <Button variant="primary" size="md" onClick={() => onNavigate('prancheta')} className="w-full">
               Ir para Prancheta
             </Button>
           </motion.div>
 
-          <motion.div className="bg-white rounded-2xl p-6 shadow-xl" whileHover={{ scale: 1.02 }}>
-            <div className="text-4xl mb-2">🚇</div>
-            <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Túnel do Estádio</h2>
-            <p className="text-sm text-neutral-600 mb-4">Escolha Partidas Oficiais ou Campeonato da Turma.</p>
-            <div className="grid grid-cols-1 gap-2">
-              <Button variant="success" size="md" onClick={() => onNavigate('campo')}>
-                Partidas Oficiais
-              </Button>
-              <Button variant="secondary" size="md" onClick={() => onNavigate('campeonato')}>
-                Campeonato da Turma
-              </Button>
-            </div>
+          <motion.div className="bg-white rounded-2xl p-6 shadow-xl border-l-8 border-yellow-400" whileHover={{ scale: 1.02 }}>
+            <div className="text-4xl mb-2">🏆</div>
+            <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Campeonato</h2>
+            <p className="text-sm text-neutral-600 mb-4">Jogue as criações da turma e vote no VAR.</p>
+            <Button variant="secondary" size="md" onClick={() => onNavigate('campeonato')} className="w-full">
+              Abrir Campeonato
+            </Button>
           </motion.div>
         </div>
       </motion.div>

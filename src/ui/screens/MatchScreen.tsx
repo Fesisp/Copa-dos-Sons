@@ -3,7 +3,6 @@ import { Button, DropZone, PhonemeCard } from '../components';
 import { useGameStore } from '../../store/gameStore';
 import { audioManager } from '../../services/audioManager';
 import { customWordService } from '../../services/databaseService';
-import { celebrationService } from '../../services/celebrationService';
 import type { AppScreen, Card } from '../../types';
 
 interface MatchScreenProps {
@@ -12,6 +11,7 @@ interface MatchScreenProps {
 
 export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
+  const [showVarModal, setShowVarModal] = useState(false);
   const slotRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   const cardsCatalog = useGameStore((s) => s.cardsCatalog);
@@ -54,10 +54,10 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
   };
 
   React.useEffect(() => {
-    if (matchStatus === 'victory') {
-      celebrationService.goalExplosion();
+    if (matchStatus === 'victory' && matchSource === 'community') {
+      setShowVarModal(true);
     }
-  }, [matchStatus]);
+  }, [matchStatus, matchSource]);
 
   if (targetWord.length === 0) {
     return (
@@ -77,6 +77,9 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Button variant="secondary" size="sm" onClick={() => { resetCurrentMatch(); onNavigate('vestiario'); }}>← Sair da Partida</Button>
+          <span className="px-3 py-1 rounded-full bg-white/80 text-sm font-display font-bold text-field-700 shadow">
+            {matchSource === 'official' ? 'Partida Oficial' : 'Partida da Comunidade'}
+          </span>
           <Button variant="primary" size="sm" onClick={() => void audioManager.playWord(targetWord)}>🔊 Ouvir Jogada</Button>
         </div>
 
@@ -131,7 +134,7 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
             <h2 className="font-display text-3xl font-bold text-field-700 mb-2">GOOOOL! ⚽</h2>
             <p className="text-neutral-700 mb-4">Você atraiu +{crowdDelta} torcedores nesta jogada.</p>
 
-            {matchSource === 'community' && selectedCommunityWordId && (
+            {matchSource === 'community' && selectedCommunityWordId && !showVarModal && (
               <div className="mb-4">
                 <p className="font-display font-bold mb-2">O que achou da jogada?</p>
                 <div className="flex gap-2">
@@ -153,6 +156,41 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
           </div>
         )}
       </div>
+
+      {showVarModal && matchSource === 'community' && selectedCommunityWordId && (
+        <div className="fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border-l-8 border-yellow-400">
+            <h3 className="font-display text-2xl text-field-700 font-bold mb-2">VAR - Árbitro de Vídeo</h3>
+            <p className="text-sm text-neutral-600 mb-4">A jogada fez sentido? Vote para subir no ranking da turma.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="success"
+                size="md"
+                onClick={async () => {
+                  await customWordService.voteWord(selectedCommunityWordId, 'golaco');
+                  setShowVarModal(false);
+                  resetCurrentMatch();
+                  onNavigate('campeonato');
+                }}
+              >
+                👍 Golaço
+              </Button>
+              <Button
+                variant="danger"
+                size="md"
+                onClick={async () => {
+                  await customWordService.voteWord(selectedCommunityWordId, 'falta');
+                  setShowVarModal(false);
+                  resetCurrentMatch();
+                  onNavigate('campeonato');
+                }}
+              >
+                👎 Falta
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

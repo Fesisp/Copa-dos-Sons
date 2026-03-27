@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { Card, GameStore, OfficialMatch, Player } from '../types';
 import { audioManager } from '../services/audioManager';
+import { celebrationService } from '../services/celebrationService';
 import { playerService } from '../services/databaseService';
 
 const INITIAL_UNLOCKED = ['a', 'e', 'i', 'o', 'u'];
@@ -21,22 +22,36 @@ const normalizeToken = (value: string): string =>
 
 const DEFAULT_CARDS: Card[] = [
   { id: 'a', phoneme: 'a', audioKey: 'a', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
-  { id: 'e', phoneme: 'e', audioKey: 'e', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
-  { id: 'i', phoneme: 'i', audioKey: 'i', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
-  { id: 'o', phoneme: 'o', audioKey: 'o', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
-  { id: 'u', phoneme: 'u', audioKey: 'u', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
   { id: 'b', phoneme: 'b', audioKey: 'b', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
+  { id: 'c', phoneme: 'c', audioKey: 'k', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
+  { id: 'ch', phoneme: 'ch', audioKey: 'ch', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
+  { id: 'd', phoneme: 'd', audioKey: 'd', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
+  { id: 'e', phoneme: 'e', audioKey: 'e', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
+  { id: 'em', phoneme: 'em', audioKey: 'em', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
+  { id: 'f', phoneme: 'f', audioKey: 'f', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
+  { id: 'g', phoneme: 'g', audioKey: 'g', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
+  { id: 'i', phoneme: 'i', audioKey: 'i', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
+  { id: 'im', phoneme: 'im', audioKey: 'im', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
+  { id: 'j', phoneme: 'j', audioKey: 'j', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
+  { id: 'k', phoneme: 'k', audioKey: 'k', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
+  { id: 'l', phoneme: 'l', audioKey: 'l', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
+  { id: 'lh', phoneme: 'lh', audioKey: 'lh', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
   { id: 'p', phoneme: 'p', audioKey: 'p', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
   { id: 'm', phoneme: 'm', audioKey: 'm', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
-  { id: 't', phoneme: 't', audioKey: 't', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
-  { id: 'f', phoneme: 'f', audioKey: 'f', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
-  { id: 'v', phoneme: 'v', audioKey: 'v', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
-  { id: 's', phoneme: 's', audioKey: 's', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
-  { id: 'z', phoneme: 'z', audioKey: 'z', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
-  { id: 'ch', phoneme: 'ch', audioKey: 'ch', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
+  { id: 'n', phoneme: 'n', audioKey: 'n', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
   { id: 'nh', phoneme: 'nh', audioKey: 'nh', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
-  { id: 'lh', phoneme: 'lh', audioKey: 'lh', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
+  { id: 'o', phoneme: 'o', audioKey: 'o', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
+  { id: 'on', phoneme: 'on', audioKey: 'on', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
+  { id: 'an', phoneme: 'an', audioKey: 'an', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
+  { id: 't', phoneme: 't', audioKey: 't', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png' },
+  { id: 'r', phoneme: 'r', audioKey: 'r', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
   { id: 'rr', phoneme: 'rr', audioKey: 'rr', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
+  { id: 's', phoneme: 's', audioKey: 's', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
+  { id: 'u', phoneme: 'u', audioKey: 'u', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
+  { id: 'um', phoneme: 'um', audioKey: 'um', leagueTier: 'serie-a', imageUrl: '/images/placeholder.png' },
+  { id: 'v', phoneme: 'v', audioKey: 'v', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
+  { id: 'x', phoneme: 'x', audioKey: 'x', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
+  { id: 'z', phoneme: 'z', audioKey: 'z', leagueTier: 'serie-b', imageUrl: '/images/placeholder.png' },
 ];
 
 const initialState = {
@@ -194,6 +209,7 @@ export const useGameStore = create<GameStore>()(
           void playerService.addCrowd(currentPlayer.id, state.crowdDelta);
         }
 
+        celebrationService.goalExplosion();
         void audioManager.playGoalSound();
       }
 

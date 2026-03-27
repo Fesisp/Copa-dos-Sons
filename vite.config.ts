@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: [
         'favicon.svg',
+        'icon-ball.svg',
+        'icon-trophy.svg',
         'icon-192x192.png',
-        'icon-512x512.png',
-        'maskable-icon.png',
       ],
       manifest: {
         name: 'Copa dos Sons',
@@ -26,21 +26,16 @@ export default defineConfig({
         categories: ['education'],
         icons: [
           {
-            src: '/icon-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: '/icon-512x512.png',
+            src: '/icon-ball.svg',
             sizes: '512x512',
-            type: 'image/png',
+            type: 'image/svg+xml',
             purpose: 'any',
           },
           {
-            src: '/maskable-icon.png',
+            src: '/icon-trophy.svg',
             sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
           },
         ],
       },

@@ -237,11 +237,15 @@ class AudioManager {
     }
   }
 
+  async playWordSequence(phonemeKeys: string[], gapMs = 80): Promise<void> {
+    await this.playPhonemeSequence(phonemeKeys, gapMs);
+  }
+
   /**
    * Alias semântico para o Modo Criação
    */
   async playWord(wordArray: string[], gapMs = 80): Promise<void> {
-    await this.playPhonemeSequence(wordArray, gapMs);
+    await this.playWordSequence(wordArray, gapMs);
   }
 
   /**
