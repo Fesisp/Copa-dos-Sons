@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Button, DropZone, PhonemeCard } from '../components';
 import { useGameStore } from '../../store/gameStore';
 import { audioManager } from '../../services/audioManager';
@@ -11,11 +12,9 @@ interface MatchScreenProps {
 
 export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
-  const [showVarModal, setShowVarModal] = useState(false);
-  const [showGoalBurst, setShowGoalBurst] = useState(false);
   const [fieldShake, setFieldShake] = useState(false);
   const [wrongCardId, setWrongCardId] = useState<string | null>(null);
-  const [showNearMissHint, setShowNearMissHint] = useState(false);
+  const [shuffledCards, setShuffledCards] = useState<Card[]>([]);
   const slotRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   const cardsCatalog = useGameStore((s) => s.cardsCatalog);
@@ -41,63 +40,62 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
     return null;
   };
 
-  const toCard = (token: string, index: number): Card => {
-    const known = cardsCatalog.find((card) => card.audioKey === token || card.id === token);
-    if (known) {
-      return { ...known, id: `${known.id}-${index}` };
-    }
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const cards = availableCards.map((token, index) => {
+        const known = cardsCatalog.find((card) => card.audioKey === token || card.id === token);
+        if (known) {
+          return { ...known, id: `${known.id}-${index}` };
+        }
 
-    return {
-      id: `${token}-${index}`,
-      phoneme: token,
-      audioKey: token,
-      leagueTier: 'serie-c',
-      imageUrl: '/images/placeholder.png',
-    };
-  };
+        return {
+          id: `${token}-${index}`,
+          phoneme: token,
+          audioKey: token,
+          leagueTier: 'serie-c' as const,
+          imageUrl: '/images/placeholder.png',
+        };
+      });
 
-  React.useEffect(() => {
-    if (matchStatus === 'victory' && matchSource === 'community') {
-      setShowVarModal(true);
-    }
-  }, [matchStatus, matchSource]);
+      setShuffledCards([...cards].sort(() => Math.random() - 0.5));
+    }, 0);
 
-  React.useEffect(() => {
-    if (matchStatus === 'victory') {
-      setShowGoalBurst(true);
-      const timeoutId = window.setTimeout(() => setShowGoalBurst(false), 900);
-      return () => window.clearTimeout(timeoutId);
-    }
-  }, [matchStatus]);
+    return () => window.clearTimeout(timeoutId);
+  }, [availableCards, cardsCatalog]);
+
+  const showVarModal = matchStatus === 'victory' && matchSource === 'community' && !!selectedCommunityWordId;
 
   if (targetWord.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
-          <p className="mb-4">Nenhuma partida ativa.</p>
-          <Button variant="secondary" size="md" onClick={() => onNavigate('vestiario')}>Voltar ao Vestiário</Button>
-        </div>
-      </div>
-    );
+    return null;
   }
 
-  const completedSlots = assembledSlots.filter(Boolean).length;
-  const draggableCards = availableCards.map((token, index) => toCard(token, index));
-
   return (
-    <div className="min-h-screen stadium-bg pitch-markings p-6">
-      <div className={`max-w-6xl mx-auto ${fieldShake ? 'camera-shake' : ''}`}>
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="secondary" size="sm" onClick={() => { resetCurrentMatch(); onNavigate('vestiario'); }}>← Sair da Partida</Button>
-          <span className="px-3 py-1 rounded-full bg-white/90 text-sm font-display font-bold text-field-700 shadow-[0_4px_0_0_rgba(0,0,0,0.1)]">
-            {matchSource === 'official' ? 'Partida Oficial' : 'Partida da Comunidade'}
-          </span>
-          <Button variant="primary" size="sm" onClick={() => void audioManager.playWord(targetWord)}>🔊 Ouvir Jogada</Button>
+    <div className="min-h-screen stadium-bg pitch-markings p-4 md:p-8 flex flex-col">
+      <div className={`max-w-5xl mx-auto w-full flex-1 flex flex-col ${fieldShake ? 'camera-shake' : ''}`}>
+        <div className="flex items-center justify-between mb-8">
+          <Button variant="secondary" size="sm" onClick={() => { resetCurrentMatch(); onNavigate('vestiario'); }}>
+            ⬅ Sair
+          </Button>
+          <div className="px-6 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white font-display font-bold shadow-lg">
+            {matchSource === 'official' ? '🏆 Partida Oficial' : '🤝 Desafio da Turma'}
+          </div>
+          <div className="w-[100px]" />
         </div>
 
-        <div className={`bg-white/95 rounded-2xl p-6 shadow-[0_10px_0_0_rgba(0,0,0,0.14)] mb-6 border border-white/80 ${matchStatus === 'victory' ? 'goal-flash' : ''}`}>
-          <p className="font-display font-bold text-lg text-neutral-700 text-center mb-4">Monte a jogada no gramado</p>
-          <div className="flex flex-wrap justify-center gap-3">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => void audioManager.playWord(targetWord)}
+            className="relative flex flex-col items-center justify-center w-36 h-36 bg-gold-400 rounded-full border-8 border-white shadow-card-float mb-8 z-10 group cursor-pointer"
+            type="button"
+          >
+            <div className="absolute inset-0 rounded-full border-4 border-gold-400 animate-ping opacity-60" />
+            <span className="text-6xl group-hover:scale-110 transition-transform">🔊</span>
+            <span className="text-white font-display font-bold text-sm uppercase mt-1 drop-shadow-md">Ouvir</span>
+          </motion.button>
+
+          <div className={`bg-white/10 backdrop-blur-sm rounded-3xl p-6 border-2 border-white/20 shadow-2xl mb-12 flex flex-wrap justify-center gap-4 ${matchStatus === 'victory' ? 'goal-flash' : ''}`}>
             {targetWord.map((_, index) => (
               <DropZone
                 key={`slot-${index}`}
@@ -109,11 +107,17 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
               />
             ))}
           </div>
-          <p className="text-center text-sm text-neutral-600 mt-4">Progresso: {completedSlots}/{targetWord.length} slots</p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-          {draggableCards.map((card) => {
+        <div className="bg-black/20 backdrop-blur-md rounded-t-3xl p-6 -mx-4 md:mx-0 border-t border-white/20">
+          <p className="text-white/80 text-center font-display font-bold mb-4 uppercase tracking-widest text-sm">As tuas cartas</p>
+          <div className="flex flex-wrap justify-center gap-4">
+          {shuffledCards.map((card) => {
+            const isUsed = assembledSlots.includes(card.audioKey);
+            if (isUsed && matchStatus !== 'victory') {
+              return <div key={card.id} className="w-28 h-36 opacity-0" />;
+            }
+
             return (
               <PhonemeCard
                 key={card.id}
@@ -130,18 +134,14 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
                   const slotIndex = findSlotByPoint(point);
                   setHoveredSlot(null);
                   if (slotIndex === null) return;
-                  const draggedCard = draggableCards.find((candidate) => candidate.id === id);
-                  if (!draggedCard) return;
 
-                  const isCorrect = handleDrop(draggedCard.audioKey, slotIndex);
+                  const isCorrect = handleDrop(card.audioKey, slotIndex);
                   if (!isCorrect) {
                     setWrongCardId(id);
                     setFieldShake(true);
-                    setShowNearMissHint(true);
                     void audioManager.playNearMissSound();
-                    window.setTimeout(() => setWrongCardId(null), 360);
-                    window.setTimeout(() => setFieldShake(false), 360);
-                    window.setTimeout(() => setShowNearMissHint(false), 1100);
+                    window.setTimeout(() => setWrongCardId(null), 400);
+                    window.setTimeout(() => setFieldShake(false), 400);
                   } else {
                     void audioManager.playSuccessSound();
                   }
@@ -149,40 +149,40 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
               />
             );
           })}
+          </div>
         </div>
 
         {matchStatus === 'victory' && (
-          <div className="mt-6 bg-white rounded-2xl p-6 shadow-[0_10px_0_0_rgba(0,0,0,0.14)] border-l-8 border-gold-500">
-            <h2 className="font-display text-3xl font-bold text-field-700 mb-2">GOOOOL! ⚽</h2>
-            <p className="text-neutral-700 mb-4">Você atraiu +{crowdDelta} torcedores nesta jogada.</p>
-            <p className="text-sm text-neutral-600 mb-4">Figurinha dourada destravada e torcida em festa!</p>
-
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white rounded-3xl p-8 shadow-2xl border-b-8 border-gold-500 z-50 text-center min-w-[320px]"
+          >
+            <h2 className="font-display text-4xl font-extrabold text-field-600 mb-2">GOLAÇO! ⚽</h2>
+            <p className="text-neutral-700 text-lg font-bold mb-6">+{crowdDelta} Torcedores</p>
             {matchSource === 'official' && (
               <Button variant="primary" size="md" onClick={() => { resetCurrentMatch(); onNavigate('campo'); }}>
-                Próxima Partida Oficial
+                Continuar a Jogar
               </Button>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
 
-      {showGoalBurst && (
-        <div className="fixed inset-0 pointer-events-none z-30 flex items-center justify-center">
-          <div className="animate-goal-pop px-8 py-4 rounded-3xl bg-gold-500/90 text-uniform-800 font-display text-5xl md:text-7xl font-extrabold shadow-[0_18px_35px_rgba(0,0,0,0.35)]">
-            GOL!
-          </div>
+      {matchStatus === 'victory' && (
+        <div className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: [0, 1.2, 1] }}
+            transition={{ type: 'spring', bounce: 0.5 }}
+            className="text-[120px] md:text-[180px] drop-shadow-[0_20px_20px_rgba(0,0,0,0.5)]"
+          >
+            ⚽
+          </motion.div>
         </div>
       )}
 
-      {showNearMissHint && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-          <div className="rounded-2xl bg-white/95 border border-gold-300 px-5 py-2 shadow-[0_8px_0_0_rgba(0,0,0,0.12)] text-field-700 font-display font-bold text-lg animate-fade-in">
-            Quase lá! Tenta de novo ⚽
-          </div>
-        </div>
-      )}
-
-      {showVarModal && matchSource === 'community' && selectedCommunityWordId && (
+      {showVarModal && selectedCommunityWordId && (
         <div className="fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border-l-8 border-yellow-400">
             <h3 className="font-display text-2xl text-field-700 font-bold mb-2">VAR - Árbitro de Vídeo</h3>
@@ -193,7 +193,6 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
                 size="md"
                 onClick={async () => {
                   await customWordService.voteWord(selectedCommunityWordId, 'golaco');
-                  setShowVarModal(false);
                   resetCurrentMatch();
                   onNavigate('campeonato');
                 }}
@@ -205,7 +204,6 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
                 size="md"
                 onClick={async () => {
                   await customWordService.voteWord(selectedCommunityWordId, 'falta');
-                  setShowVarModal(false);
                   resetCurrentMatch();
                   onNavigate('campeonato');
                 }}
