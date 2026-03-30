@@ -30,6 +30,10 @@ Copy-Item .env.example .env
 
 - `VITE_TEACHER_REPORT_PIN` (4 a 8 dígitos)
 
+Template para produção escolar:
+
+- `.env.production.example`
+
 ## Executar localmente
 
 ```powershell
@@ -68,6 +72,17 @@ Saída esperada:
 - Ícones PWA definidos (`icon-ball.svg`, `icon-trophy.svg`).
 - Fluxos principais testados: Vestiário → Álbum → Treino/Partida → Prancheta → Campeonato.
 
+## Protocolo de teste offline (obrigatório)
+
+1. Abrir o app no Chrome e entrar no DevTools (`F12`).
+2. Na aba `Network`, marcar `Offline`.
+3. Repetir os fluxos principais para validar que:
+	- Dexie persiste progresso/jogadas sem internet;
+	- Howler toca áudio do sprite em cache;
+	- telas carregam sem dependência de rede.
+
+Mídias esperadas em cache PWA: `.mp3`, `.m4a`, `.wav`, imagens e índices `.json`.
+
 ## Stack
 
 - React 19 + TypeScript + Vite
@@ -76,3 +91,10 @@ Saída esperada:
 - Howler.js (sprite de áudio)
 - Framer Motion
 - vite-plugin-pwa
+
+## Documentação de entrega final
+
+- Plano executivo de finalização: `docs/FINAL_DELIVERY_PLAN.md`
+- Checklist de QA/homologação: `docs/QA_HOMOLOGATION_CHECKLIST.md`
+- Runbook de handoff para escola: `docs/SCHOOL_HANDOFF_RUNBOOK.md`
+- Evidências técnicas da release final (30/03/2026): `docs/FINAL_RELEASE_EVIDENCE_2026-03-30.md`

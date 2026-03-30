@@ -104,6 +104,17 @@ export const playerService = {
 
     await db.players.put(player);
   },
+
+  async markOfficialMatchCompleted(playerId: string, matchId: string): Promise<void> {
+    const player = await db.players.get(playerId);
+    if (!player) return;
+
+    if (!player.completedOfficialMatchIds.includes(matchId)) {
+      player.completedOfficialMatchIds.push(matchId);
+      player.lastPlayedAt = new Date();
+      await db.players.put(player);
+    }
+  },
 };
 
 /**

@@ -40,7 +40,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,json}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,m4a,wav,json}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
@@ -54,7 +54,7 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /\/audio\/.*\.mp3$/,
+            urlPattern: /\/audio\/.*\.(mp3|m4a|wav)$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'audio-cache',

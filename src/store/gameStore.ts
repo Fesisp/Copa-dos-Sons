@@ -195,18 +195,38 @@ export const useGameStore = create<GameStore>()(
         state.assembledSlots.every((slot, index) => slot === state.targetWord[index]);
 
       if (isCompleted) {
+        const officialReward =
+          state.currentMatchSource === 'official' && state.currentOfficialMatch
+            ? state.currentOfficialMatch.crowdReward
+            : 0;
+
         set((draft) => {
           draft.matchStatus = 'victory';
+          draft.crowdDelta += officialReward;
         });
 
-        const { currentOfficialMatch, currentPlayer } = get();
+        const { currentOfficialMatch, currentPlayer, crowdDelta } = get();
 
         if (state.currentMatchSource === 'official' && currentOfficialMatch?.rewardCardId) {
           get().unlockPhoneme(currentOfficialMatch.rewardCardId);
         }
 
-        if (currentPlayer) {
-          void playerService.addCrowd(currentPlayer.id, state.crowdDelta);
+        if (state.currentMatchSource === 'official' && currentOfficialMatch?.id) {
+          set((draft) => {
+            if (!draft.currentPlayer) return;
+
+            if (!draft.currentPlayer.completedOfficialMatchIds.includes(currentOfficialMatch.id)) {
+              draft.currentPlayer.completedOfficialMatchIds.push(currentOfficialMatch.id);
+            }
+          });
+
+          if (currentPlayer) {
+            void playerService.markOfficialMatchCompleted(currentPlayer.id, currentOfficialMatch.id);
+          }
+        }
+
+        if (currentPlayer && crowdDelta > 0) {
+          get().addCrowd(crowdDelta);
         }
 
         celebrationService.goalExplosion();

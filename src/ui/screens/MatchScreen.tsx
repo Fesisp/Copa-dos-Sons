@@ -71,6 +71,7 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
   }
 
   const completedSlots = assembledSlots.filter(Boolean).length;
+  const draggableCards = availableCards.map((token, index) => toCard(token, index));
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-field-100 to-uniform-100 p-6">
@@ -101,8 +102,7 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-          {availableCards.map((token, index) => {
-            const card = toCard(token, index);
+          {draggableCards.map((card) => {
             return (
               <PhonemeCard
                 key={card.id}
@@ -119,7 +119,10 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
                   const slotIndex = findSlotByPoint(point);
                   setHoveredSlot(null);
                   if (slotIndex === null) return;
-                  const isCorrect = handleDrop(id.split('-')[0], slotIndex);
+                  const draggedCard = draggableCards.find((candidate) => candidate.id === id);
+                  if (!draggedCard) return;
+
+                  const isCorrect = handleDrop(draggedCard.audioKey, slotIndex);
                   if (isCorrect) {
                     checkWordCompletion();
                   }
@@ -133,20 +136,6 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
           <div className="mt-6 bg-white rounded-2xl p-6 shadow-xl border-l-4 border-yellow-400">
             <h2 className="font-display text-3xl font-bold text-field-700 mb-2">GOOOOL! ⚽</h2>
             <p className="text-neutral-700 mb-4">Você atraiu +{crowdDelta} torcedores nesta jogada.</p>
-
-            {matchSource === 'community' && selectedCommunityWordId && !showVarModal && (
-              <div className="mb-4">
-                <p className="font-display font-bold mb-2">O que achou da jogada?</p>
-                <div className="flex gap-2">
-                  <Button variant="success" size="md" onClick={async () => { await customWordService.voteWord(selectedCommunityWordId, 'golaco'); resetCurrentMatch(); onNavigate('campeonato'); }}>
-                    👍 Golaço
-                  </Button>
-                  <Button variant="danger" size="md" onClick={async () => { await customWordService.voteWord(selectedCommunityWordId, 'falta'); resetCurrentMatch(); onNavigate('campeonato'); }}>
-                    👎 Falta
-                  </Button>
-                </div>
-              </div>
-            )}
 
             {matchSource === 'official' && (
               <Button variant="primary" size="md" onClick={() => { resetCurrentMatch(); onNavigate('campo'); }}>
