@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '../components';
 import { useGameStore } from '../../store/gameStore';
 import type { AppScreen } from '../../types';
+import { prefetchScreens } from './screenLoaders';
 
 interface VestiarioScreenProps {
   onNavigate: (screen: AppScreen) => void;
@@ -11,6 +12,16 @@ interface VestiarioScreenProps {
 export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) => {
   const player = useGameStore((s) => s.currentPlayer);
   const unlockedCount = player?.unlockedPhonemes.length ?? 0;
+
+  const buildIntentPrefetchProps = (screens: AppScreen[]) => {
+    const prefetch = () => prefetchScreens(screens);
+
+    return {
+      onMouseEnter: prefetch,
+      onFocus: prefetch,
+      onTouchStart: prefetch,
+    };
+  };
 
   return (
     <div className="min-h-screen stadium-bg p-6">
@@ -49,7 +60,13 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
             <div className="text-4xl mb-2">🗂️</div>
             <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Meu Álbum</h2>
             <p className="text-sm text-neutral-600 mb-4">Inventário completo com todos os 31 fonemas.</p>
-            <Button variant="secondary" size="md" onClick={() => onNavigate('album')} className="w-full">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => onNavigate('album')}
+              className="w-full"
+              {...buildIntentPrefetchProps(['album'])}
+            >
               Abrir Meu Álbum
             </Button>
           </motion.div>
@@ -58,7 +75,13 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
             <div className="text-4xl mb-2">🏃</div>
             <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Ir para o Treino</h2>
             <p className="text-sm text-neutral-600 mb-4">Jogue partidas oficiais para ganhar cartas novas.</p>
-            <Button variant="success" size="md" onClick={() => onNavigate('campo')} className="w-full">
+            <Button
+              variant="success"
+              size="md"
+              onClick={() => onNavigate('campo')}
+              className="w-full"
+              {...buildIntentPrefetchProps(['campo', 'match'])}
+            >
               Ir para o Treino
             </Button>
           </motion.div>
@@ -67,7 +90,13 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
             <div className="text-4xl mb-2">📋</div>
             <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Prancheta</h2>
             <p className="text-sm text-neutral-600 mb-4">Crie jogadas com as cartas que já conquistou.</p>
-            <Button variant="primary" size="md" onClick={() => onNavigate('prancheta')} className="w-full">
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => onNavigate('prancheta')}
+              className="w-full"
+              {...buildIntentPrefetchProps(['prancheta'])}
+            >
               Ir para Prancheta
             </Button>
           </motion.div>
@@ -76,7 +105,13 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
             <div className="text-4xl mb-2">🏆</div>
             <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Campeonato</h2>
             <p className="text-sm text-neutral-600 mb-4">Jogue as criações da turma e vote no VAR.</p>
-            <Button variant="secondary" size="md" onClick={() => onNavigate('campeonato')} className="w-full">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => onNavigate('campeonato')}
+              className="w-full"
+              {...buildIntentPrefetchProps(['campeonato'])}
+            >
               Abrir Campeonato
             </Button>
           </motion.div>
@@ -85,7 +120,13 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
             <div className="text-4xl mb-2">📊</div>
             <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Boletim do Técnico</h2>
             <p className="text-sm text-neutral-600 mb-4">Área docente com indicadores BNCC e análise UGC da turma.</p>
-            <Button variant="danger" size="md" onClick={() => onNavigate('boletim')} className="w-full">
+            <Button
+              variant="danger"
+              size="md"
+              onClick={() => onNavigate('boletim')}
+              className="w-full"
+              {...buildIntentPrefetchProps(['boletim'])}
+            >
               Acessar Boletim
             </Button>
           </motion.div>

@@ -8,15 +8,17 @@ import { audioManager } from './services/audioManager';
 import { playerService } from './services/databaseService';
 import { useGameStore } from './store/gameStore';
 import type { AppScreen } from './types';
+import {
+  loadAlbumScreen,
+  loadBoletimTecnicoScreen,
+  loadCampeonatoScreen,
+  loadCampoScreen,
+  loadMatchScreen,
+  loadPranchetaScreen,
+  loadVestiarioScreen,
+  prefetchScreens,
+} from './ui/screens/screenLoaders';
 import './index.css';
-
-const loadVestiarioScreen = () => import('./ui/screens/VestiarioScreen');
-const loadAlbumScreen = () => import('./ui/screens/AlbumScreen');
-const loadPranchetaScreen = () => import('./ui/screens/PranchetaScreen');
-const loadCampoScreen = () => import('./ui/screens/CampoScreen');
-const loadMatchScreen = () => import('./ui/screens/MatchScreen');
-const loadCampeonatoScreen = () => import('./ui/screens/CampeonatoScreen');
-const loadBoletimTecnicoScreen = () => import('./ui/screens/BoletimTecnicoScreen');
 
 const VestiarioScreen = lazy(() =>
   loadVestiarioScreen().then((module) => ({ default: module.VestiarioScreen }))
@@ -97,18 +99,8 @@ function App() {
 
     hasPrefetchedFromVestiario.current = true;
 
-    const prefetchTargets = [
-      loadCampoScreen,
-      loadMatchScreen,
-      loadPranchetaScreen,
-      loadAlbumScreen,
-      loadCampeonatoScreen,
-    ];
-
     const runPrefetch = () => {
-      prefetchTargets.forEach((loadModule) => {
-        void loadModule();
-      });
+      prefetchScreens(['campo', 'match', 'prancheta', 'album', 'campeonato']);
     };
 
     let timeoutId: number | undefined;
