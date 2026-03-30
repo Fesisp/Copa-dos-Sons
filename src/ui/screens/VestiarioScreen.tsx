@@ -80,6 +80,15 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
               Abrir Campeonato
             </Button>
           </motion.div>
+
+          <motion.div className="bg-white rounded-2xl p-6 shadow-xl border-l-8 border-red-500" whileHover={{ scale: 1.02 }}>
+            <div className="text-4xl mb-2">📊</div>
+            <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Boletim do Técnico</h2>
+            <p className="text-sm text-neutral-600 mb-4">Área docente com indicadores BNCC e análise UGC da turma.</p>
+            <Button variant="danger" size="md" onClick={() => onNavigate('boletim')} className="w-full">
+              Acessar Boletim
+            </Button>
+          </motion.div>
         </div>
       </motion.div>
     </div>

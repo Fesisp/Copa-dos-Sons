@@ -3,24 +3,59 @@
  * Routes between screens and initializes game services
  */
 
-import { useEffect, useState } from 'react';
-import {
-  VestiarioScreen,
-  AlbumScreen,
-  PranchetaScreen,
-  CampoScreen,
-  MatchScreen,
-  CampeonatoScreen,
-} from './ui/screens';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { audioManager } from './services/audioManager';
 import { playerService } from './services/databaseService';
 import { useGameStore } from './store/gameStore';
 import type { AppScreen } from './types';
 import './index.css';
 
+const loadVestiarioScreen = () => import('./ui/screens/VestiarioScreen');
+const loadAlbumScreen = () => import('./ui/screens/AlbumScreen');
+const loadPranchetaScreen = () => import('./ui/screens/PranchetaScreen');
+const loadCampoScreen = () => import('./ui/screens/CampoScreen');
+const loadMatchScreen = () => import('./ui/screens/MatchScreen');
+const loadCampeonatoScreen = () => import('./ui/screens/CampeonatoScreen');
+const loadBoletimTecnicoScreen = () => import('./ui/screens/BoletimTecnicoScreen');
+
+const VestiarioScreen = lazy(() =>
+  loadVestiarioScreen().then((module) => ({ default: module.VestiarioScreen }))
+);
+
+const AlbumScreen = lazy(() =>
+  loadAlbumScreen().then((module) => ({ default: module.AlbumScreen }))
+);
+
+const PranchetaScreen = lazy(() =>
+  loadPranchetaScreen().then((module) => ({ default: module.PranchetaScreen }))
+);
+
+const CampoScreen = lazy(() =>
+  loadCampoScreen().then((module) => ({ default: module.CampoScreen }))
+);
+
+const MatchScreen = lazy(() =>
+  loadMatchScreen().then((module) => ({ default: module.MatchScreen }))
+);
+
+const CampeonatoScreen = lazy(() =>
+  loadCampeonatoScreen().then((module) => ({ default: module.CampeonatoScreen }))
+);
+
+const BoletimTecnicoScreen = lazy(() =>
+  loadBoletimTecnicoScreen().then((module) => ({ default: module.BoletimTecnicoScreen }))
+);
+
+const ScreenLoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <p className="font-display text-xl text-neutral-700">Carregando módulo...</p>
+  </div>
+);
+
 function App() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('vestiario');
   const [isInitialized, setIsInitialized] = useState(false);
+  const hasPrefetchedFromVestiario = useRef(false);
   const setCurrentPlayer = useGameStore((state) => state.setCurrentPlayer);
   const currentPlayer = useGameStore((state) => state.currentPlayer);
 
@@ -55,6 +90,50 @@ function App() {
     setCurrentScreen(screen);
   };
 
+  useEffect(() => {
+    if (!isInitialized || !currentPlayer || currentScreen !== 'vestiario' || hasPrefetchedFromVestiario.current) {
+      return;
+    }
+
+    hasPrefetchedFromVestiario.current = true;
+
+    const prefetchTargets = [
+      loadCampoScreen,
+      loadMatchScreen,
+      loadPranchetaScreen,
+      loadAlbumScreen,
+      loadCampeonatoScreen,
+    ];
+
+    const runPrefetch = () => {
+      prefetchTargets.forEach((loadModule) => {
+        void loadModule();
+      });
+    };
+
+    let timeoutId: number | undefined;
+    let idleId: number | undefined;
+
+    const requestIdle = globalThis.requestIdleCallback;
+    const cancelIdle = globalThis.cancelIdleCallback;
+
+    if (typeof requestIdle === 'function') {
+      idleId = requestIdle(runPrefetch, { timeout: 1200 });
+    } else {
+      timeoutId = window.setTimeout(runPrefetch, 250);
+    }
+
+    return () => {
+      if (idleId !== undefined && typeof cancelIdle === 'function') {
+        cancelIdle(idleId);
+      }
+
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [isInitialized, currentPlayer, currentScreen]);
+
   if (!isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-field-50 to-uniform-50">
@@ -76,12 +155,15 @@ function App() {
         </div>
       )}
 
-      {currentPlayer && currentScreen === 'vestiario' && <VestiarioScreen onNavigate={handleNavigate} />}
-      {currentPlayer && currentScreen === 'album' && <AlbumScreen onNavigate={handleNavigate} />}
-      {currentPlayer && currentScreen === 'prancheta' && <PranchetaScreen onNavigate={handleNavigate} />}
-      {currentPlayer && currentScreen === 'campo' && <CampoScreen onNavigate={handleNavigate} />}
-      {currentPlayer && currentScreen === 'match' && <MatchScreen onNavigate={handleNavigate} />}
-      {currentPlayer && currentScreen === 'campeonato' && <CampeonatoScreen onNavigate={handleNavigate} />}
+      <Suspense fallback={<ScreenLoadingFallback />}>
+        {currentPlayer && currentScreen === 'vestiario' && <VestiarioScreen onNavigate={handleNavigate} />}
+        {currentPlayer && currentScreen === 'album' && <AlbumScreen onNavigate={handleNavigate} />}
+        {currentPlayer && currentScreen === 'prancheta' && <PranchetaScreen onNavigate={handleNavigate} />}
+        {currentPlayer && currentScreen === 'campo' && <CampoScreen onNavigate={handleNavigate} />}
+        {currentPlayer && currentScreen === 'match' && <MatchScreen onNavigate={handleNavigate} />}
+        {currentPlayer && currentScreen === 'campeonato' && <CampeonatoScreen onNavigate={handleNavigate} />}
+        {currentPlayer && currentScreen === 'boletim' && <BoletimTecnicoScreen onNavigate={handleNavigate} />}
+      </Suspense>
     </>
   );
 }

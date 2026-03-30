@@ -17,6 +17,19 @@ Aplicativo educacional gamificado para alfabetização fonêmica em português, 
 - Node.js 20+
 - npm 10+
 
+## Configuração de ambiente
+
+1. Copie o exemplo de variáveis:
+
+```powershell
+cd "c:\Users\mrfel\OneDrive\Laboratorio\VSCode\Copa dos Sons"
+Copy-Item .env.example .env
+```
+
+2. Ajuste o PIN docente em `.env`:
+
+- `VITE_TEACHER_REPORT_PIN` (4 a 8 dígitos)
+
 ## Executar localmente
 
 ```powershell

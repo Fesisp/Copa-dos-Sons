@@ -83,5 +83,30 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     minify: 'terser',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+
+          if (id.includes('react') || id.includes('scheduler')) {
+            return 'vendor-react';
+          }
+
+          if (id.includes('framer-motion')) {
+            return 'vendor-motion';
+          }
+
+          if (id.includes('dexie')) {
+            return 'vendor-db';
+          }
+
+          if (id.includes('howler')) {
+            return 'vendor-audio';
+          }
+
+          return 'vendor';
+        },
+      },
+    },
   },
 })

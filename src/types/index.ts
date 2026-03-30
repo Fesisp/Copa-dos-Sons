@@ -15,7 +15,8 @@ export type AppScreen =
   | 'prancheta'
   | 'campo'
   | 'match'
-  | 'campeonato';
+  | 'campeonato'
+  | 'boletim';
 
 export interface Card {
   id: string; // canonical id (usually the same as phoneme key)
