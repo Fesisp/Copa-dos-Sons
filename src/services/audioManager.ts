@@ -24,9 +24,26 @@ const keyAliases: Record<string, string[]> = {
   'ã': ['an', 'am'],
   'õ': ['on', 'om'],
   'x': ['ch'],
+  ui_tap: ['ui_tap', 'plop', 'comecar', 'acerto'],
+  ui_swish: ['ui_swish', 'swish', 'comecar', 'acerto'],
+  near_miss: ['near_miss', 'trave', 'poim', 'comecar', 'erro'],
+  golaco: ['golaco', 'gol', 'completar'],
+  comecar: ['comecar', 'ui_tap', 'ui_swish'],
 };
 
-const nonPhonemeKeys = new Set(['acerto', 'erro', 'gol', 'comecar', 'completar', 'silence']);
+const nonPhonemeKeys = new Set([
+  'acerto',
+  'erro',
+  'gol',
+  'comecar',
+  'completar',
+  'silence',
+  'ui_tap',
+  'ui_swish',
+  'near_miss',
+  'trave',
+  'poim',
+]);
 
 const displayAliases: Record<string, string> = {
   an: 'ã',
@@ -226,6 +243,15 @@ class AudioManager {
     return match ?? null;
   }
 
+  private async playFirstAvailableAudio(keys: string[]): Promise<void> {
+    for (const key of keys) {
+      const resolved = this.resolveAudioKey(key);
+      if (!resolved) continue;
+      await this.playPhoneme(resolved);
+      return;
+    }
+  }
+
   /**
    * Play a full word phoneme by phoneme
    */
@@ -282,7 +308,19 @@ class AudioManager {
    * Play goal feedback sound
    */
   async playGoalSound(): Promise<void> {
-    await this.playPhoneme('gol');
+    await this.playFirstAvailableAudio(['golaco', 'gol', 'completar', 'acerto']);
+  }
+
+  async playNearMissSound(): Promise<void> {
+    await this.playFirstAvailableAudio(['near_miss', 'trave', 'poim', 'comecar', 'erro']);
+  }
+
+  async playUiTapSound(): Promise<void> {
+    await this.playFirstAvailableAudio(['ui_tap', 'plop', 'comecar', 'acerto']);
+  }
+
+  async playUiSwishSound(): Promise<void> {
+    await this.playFirstAvailableAudio(['ui_swish', 'swish', 'comecar', 'acerto']);
   }
 
   /**

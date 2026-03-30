@@ -22,10 +22,10 @@ Evidências:
 
 ---
 
-## 2. Fluxos funcionais (aluno)
+## 2. Fluxos funcionais (estudante)
 
 ## 2.1 Vestiário
-- [ ] Abre sem erro e mostra torcida da criança.
+- [ ] Abre sem erro e mostra torcida do estudante.
 - [ ] Botões navegam para Álbum, Treino, Prancheta e Campeonato.
 
 ## 2.2 Campo + Match oficial
@@ -84,7 +84,7 @@ Evidências:
 ## 5. UX, acessibilidade e estabilidade
 
 - [ ] Contraste de textos em telas principais adequado.
-- [ ] Mensagens de erro/sucesso claras para crianças e professores.
+- [ ] Mensagens de erro/sucesso claras para estudantes em alfabetização e professores.
 - [ ] Não há travamentos ao navegar rapidamente entre telas.
 - [ ] Não há erro crítico no console durante fluxo principal.
 

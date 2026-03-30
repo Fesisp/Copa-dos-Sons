@@ -28,9 +28,13 @@ const aliasMap = {
   on: ['on', 'om', 'õ'],
   rr: ['rr', 'r2'],
   r: ['r'],
+  comecar: ['comecar', 'começar'],
   gol: ['gol', 'completar'],
   acerto: ['acerto'],
   erro: ['erro'],
+  ui_tap: ['ui_tap', 'ui-tap', 'plop', 'click_ui'],
+  ui_swish: ['ui_swish', 'ui-swish', 'swish', 'arrastar'],
+  near_miss: ['near_miss', 'near-miss', 'trave', 'poim'],
 };
 
 const directAliasLookup = Object.fromEntries(

@@ -7,7 +7,7 @@ Copa dos Sons é uma plataforma lúdica de alfabetização fonêmica com temáti
 ## Objetivo pedagógico
 
 - Reforçar consciência fonêmica e relação fonema-grafema
-- Estimular autoria infantil com co-criação de táticas
+- Estimular autoria de estudantes em processo de alfabetização com co-criação de táticas
 - Oferecer ao professor visão de progresso com alinhamento BNCC
 
 ## Diferenciais implementados
@@ -19,7 +19,7 @@ Copa dos Sons é uma plataforma lúdica de alfabetização fonêmica com temáti
 
 ## Fluxo principal
 
-1. Criança acessa `Vestiário`
+1. Estudante acessa `Vestiário`
 2. Joga no `Campo` (partidas oficiais)
 3. Evolui no `Álbum` (cartas desbloqueadas)
 4. Cria jogadas na `Prancheta`

@@ -43,8 +43,15 @@ Este registro consolida as 5 pendências finais de entrega para a escola e o que
 Pacote final disponível:
 - `docs/FINAL_DELIVERY_PLAN.md`
 - `docs/QA_HOMOLOGATION_CHECKLIST.md`
+- `docs/PHASE_4_UX_POLISH_CHECKLIST.md`
 - `docs/SCHOOL_HANDOFF_RUNBOOK.md`
 - `docs/FINAL_RELEASE_EVIDENCE_2026-03-30.md`
+
+## 6) Ajuste de público (alfabetização ampla)
+
+- Linguagem de UX e validação revisada para não restringir faixa etária fixa.
+- Critérios focados em estudantes em diferentes estágios de alfabetização.
+- Terminologia ajustada em artefatos de entrega/homologação (ex.: estudante em vez de recorte etário específico).
 
 ## Metadados da sessão
 

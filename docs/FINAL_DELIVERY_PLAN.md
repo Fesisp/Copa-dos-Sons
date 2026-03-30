@@ -115,7 +115,7 @@ Consolidar experiência docente e navegação principal.
 ### Tarefas
 - Validar `BoletimTecnicoScreen` com dados reais do serviço pedagógico.
 - Confirmar proteção por PIN (`teacherAccess`).
-- Polir hub do `Vestiário` (status da criança + atalhos).
+- Polir hub do `Vestiário` (status de progresso do estudante + atalhos).
 
 ### Critério de aceite
 - Acesso docente protegido e estável.

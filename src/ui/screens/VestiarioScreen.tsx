@@ -24,18 +24,18 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
   };
 
   return (
-    <div className="min-h-screen stadium-bg p-6">
+    <div className="min-h-screen relative locker-room-bg p-6">
       <motion.div className="max-w-6xl mx-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="text-center mb-8">
-          <div className="text-6xl mb-2">🏟️</div>
-          <h1 className="font-display text-4xl font-bold text-white drop-shadow-lg">Vestiário do Craque Fônico</h1>
-          <p className="text-neutral-700 mt-2">
+          <div className="text-6xl mb-2">🧤</div>
+          <h1 className="font-display text-4xl font-bold text-gold-300 drop-shadow-lg">Vestiário do Craque Fônico</h1>
+          <p className="text-white/90 mt-2 font-bold">
             {player ? `${player.name}, sua torcida atual: ${player.crowd} torcedores` : 'Entre em campo e monte jogadas fonônicas!'}
           </p>
         </div>
 
         <motion.div
-          className="mb-6 rounded-3xl bg-white/90 backdrop-blur p-6 shadow-2xl border border-white/70"
+          className="mb-6 rounded-3xl bg-white/96 backdrop-blur p-6 shadow-2xl border border-gold-200"
           initial={{ y: -12, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
         >
@@ -56,10 +56,10 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <motion.div className="bg-white rounded-2xl p-6 shadow-xl border-l-8 border-field-500" whileHover={{ scale: 1.02 }}>
-            <div className="text-4xl mb-2">🗂️</div>
+          <motion.div className="bg-gradient-to-b from-white to-gold-50 rounded-2xl p-6 shadow-[0_10px_0_0_rgba(0,0,0,0.15)] border-l-8 border-gold-500" whileHover={{ scale: 1.02, y: -3 }}>
+            <div className="text-5xl mb-2">👕</div>
             <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Meu Álbum</h2>
-            <p className="text-sm text-neutral-600 mb-4">Inventário completo com todos os 31 fonemas.</p>
+            <p className="text-sm text-neutral-700 mb-4">A camisa da seleção abre seu álbum de figurinhas fonêmicas.</p>
             <Button
               variant="secondary"
               size="md"
@@ -71,12 +71,12 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
             </Button>
           </motion.div>
 
-          <motion.div className="bg-white rounded-2xl p-6 shadow-xl border-l-8 border-success-500" whileHover={{ scale: 1.02 }}>
-            <div className="text-4xl mb-2">🏃</div>
+          <motion.div className="bg-gradient-to-b from-white to-uniform-50 rounded-2xl p-6 shadow-[0_10px_0_0_rgba(0,0,0,0.15)] border-l-8 border-uniform-500" whileHover={{ scale: 1.02, y: -3 }}>
+            <div className="text-5xl mb-2">🚪</div>
             <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Ir para o Treino</h2>
-            <p className="text-sm text-neutral-600 mb-4">Jogue partidas oficiais para ganhar cartas novas.</p>
+            <p className="text-sm text-neutral-700 mb-4">Passe pelo túnel iluminado e entre no gramado das partidas oficiais.</p>
             <Button
-              variant="success"
+              variant="primary"
               size="md"
               onClick={() => onNavigate('campo')}
               className="w-full"
@@ -86,12 +86,12 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
             </Button>
           </motion.div>
 
-          <motion.div className="bg-white rounded-2xl p-6 shadow-xl border-l-8 border-uniform-500" whileHover={{ scale: 1.02 }}>
-            <div className="text-4xl mb-2">📋</div>
+          <motion.div className="bg-gradient-to-b from-white to-field-50 rounded-2xl p-6 shadow-[0_10px_0_0_rgba(0,0,0,0.15)] border-l-8 border-field-500" whileHover={{ scale: 1.02, y: -3 }}>
+            <div className="text-5xl mb-2">🧠</div>
             <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Prancheta</h2>
-            <p className="text-sm text-neutral-600 mb-4">Crie jogadas com as cartas que já conquistou.</p>
+            <p className="text-sm text-neutral-700 mb-4">A prancheta do técnico vira laboratório de criação de jogadas sonoras.</p>
             <Button
-              variant="primary"
+              variant="secondary"
               size="md"
               onClick={() => onNavigate('prancheta')}
               className="w-full"
@@ -101,10 +101,10 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
             </Button>
           </motion.div>
 
-          <motion.div className="bg-white rounded-2xl p-6 shadow-xl border-l-8 border-yellow-400" whileHover={{ scale: 1.02 }}>
-            <div className="text-4xl mb-2">🏆</div>
+          <motion.div className="bg-gradient-to-b from-white to-gold-50 rounded-2xl p-6 shadow-[0_10px_0_0_rgba(0,0,0,0.15)] border-l-8 border-gold-500" whileHover={{ scale: 1.02, y: -3 }}>
+            <div className="text-5xl mb-2">🏆</div>
             <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Campeonato</h2>
-            <p className="text-sm text-neutral-600 mb-4">Jogue as criações da turma e vote no VAR.</p>
+            <p className="text-sm text-neutral-700 mb-4">Jogue as criações da turma e vote no VAR para subir no ranking.</p>
             <Button
               variant="secondary"
               size="md"
@@ -116,8 +116,8 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
             </Button>
           </motion.div>
 
-          <motion.div className="bg-white rounded-2xl p-6 shadow-xl border-l-8 border-red-500" whileHover={{ scale: 1.02 }}>
-            <div className="text-4xl mb-2">📊</div>
+          <motion.div className="bg-gradient-to-b from-white to-error-50 rounded-2xl p-6 shadow-[0_10px_0_0_rgba(0,0,0,0.15)] border-l-8 border-error-500" whileHover={{ scale: 1.02, y: -3 }}>
+            <div className="text-5xl mb-2">📊</div>
             <h2 className="font-display text-2xl font-bold text-field-700 mb-2">Boletim do Técnico</h2>
             <p className="text-sm text-neutral-600 mb-4">Área docente com indicadores BNCC e análise UGC da turma.</p>
             <Button

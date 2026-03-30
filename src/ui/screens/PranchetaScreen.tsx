@@ -34,28 +34,28 @@ export const PranchetaScreen: React.FC<PranchetaScreenProps> = ({ onNavigate }) 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-field-50 to-uniform-50 p-6">
+    <div className="min-h-screen chalkboard-bg p-6">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="secondary" size="sm" onClick={() => onNavigate('vestiario')}>← Vestiário</Button>
-          <h1 className="font-display text-3xl font-bold text-field-800">Prancheta</h1>
+          <h1 className="font-display text-3xl font-bold text-gold-300 drop-shadow">Prancheta</h1>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-lg mb-5">
-          <p className="text-neutral-700 font-display font-bold mb-3">Linha de Passe</p>
+        <div className="bg-white/95 rounded-2xl p-5 shadow-[0_10px_0_0_rgba(0,0,0,0.14)] mb-5 border border-white/70">
+          <p className="text-neutral-700 font-display font-bold mb-3 chalk-pass-line">Linha de Passe</p>
           <div
             ref={compositionLaneRef}
             className={`flex flex-wrap gap-2 min-h-16 rounded-xl border-2 p-3 transition-all ${
               isLaneActive
-                ? 'border-uniform-400 bg-uniform-50 shadow-[0_0_0_4px_rgba(56,189,248,0.25)]'
-                : 'border-dashed border-neutral-300 bg-neutral-50'
+                ? 'border-gold-400 bg-gradient-to-r from-gold-50 to-white shadow-[0_0_0_4px_rgba(255,223,0,0.3)]'
+                : 'border-dashed border-neutral-300 bg-gradient-to-r from-neutral-50 to-white'
             }`}
           >
             {word.length === 0 ? (
               <span className="text-neutral-500">Monte sua jogada com as cartas desbloqueadas.</span>
             ) : (
               word.map((token, index) => (
-                <span key={`${token}-${index}`} className="px-3 py-2 rounded-lg bg-uniform-600 text-white font-display font-bold uppercase">
+                <span key={`${token}-${index}`} className="px-3 py-2 rounded-lg bg-uniform-500 text-white font-display font-bold uppercase shadow-[0_4px_0_0_rgba(0,0,0,0.15)]">
                   {token}
                 </span>
               ))

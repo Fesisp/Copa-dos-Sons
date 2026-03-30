@@ -12,6 +12,36 @@ Aplicativo educacional gamificado para alfabetização fonêmica em português, 
 - Persistência local via Dexie/IndexedDB.
 - PWA com Service Worker e cache de sprite de áudio para uso em tablets.
 
+## Sprint UX/UI (Mar/2026)
+
+- Identidade visual atualizada com paleta vibrante inspirada na Copa.
+- Tipografia amigável para alfabetização aplicada (`Fredoka`, `Baloo 2`, `Nunito`).
+- `PhonemeCard` redesenhado como figurinha física (vogais/consoantes diferenciadas e efeito shiny holográfico).
+- Interações táteis melhoradas com Framer Motion (drag lift/tilt/spring e botão com efeito de afundar).
+- Ambientes imersivos em `Vestiário`, `Match` e `Prancheta`.
+- Feedback visceral de jogo: overlay de `GOL!`, confete reforçado, “quase lá” com shake e áudio suave.
+
+## Sprint UX/UI - Fase 2 (Mar/2026)
+
+- Suporte a `prefers-reduced-motion` em componentes com framer-motion.
+- Gramado com marcações de campo e meia-lua para sensação de partida real.
+- Feedback encorajador de erro em `Match` (`Quase lá!`) com microanimação não punitiva.
+- Hub `Vestiário` evoluído com cards-objeto e linguagem visual mais lúdica.
+- Prancheta com legibilidade reforçada e estética técnica de lousa.
+
+## Sprint UX/UI - Fase 3 (Mar/2026)
+
+- Camada semântica de áudio consolidada no `audioManager` para `ui_tap`, `ui_swish`, `near_miss` e `golaco`.
+- Fallback inteligente para compatibilidade com sprite atual (sem quebrar operação escolar).
+- Pipeline de geração (`scripts/generate-sprite.js`) pronto para reconhecer aliases de SFX futuros.
+- `npm run audio:sprite`, `npm run lint` e `npm run build` validados com sucesso após ajustes.
+
+## Sprint UX/UI - Fase 4 (Mar/2026)
+
+- Critérios de UX revisados para público de alfabetização em sentido amplo, sem recorte rígido por idade.
+- Checklist operacional de polimento para tablet/escola com foco em legibilidade, toque, contraste e feedback.
+- Linguagem de validação pedagógica ajustada para estudantes em diferentes estágios de alfabetização.
+
 ## Requisitos
 
 - Node.js 20+
@@ -96,5 +126,6 @@ Mídias esperadas em cache PWA: `.mp3`, `.m4a`, `.wav`, imagens e índices `.jso
 
 - Plano executivo de finalização: `docs/FINAL_DELIVERY_PLAN.md`
 - Checklist de QA/homologação: `docs/QA_HOMOLOGATION_CHECKLIST.md`
+- Checklist de polimento UX/UI (Fase 4): `docs/PHASE_4_UX_POLISH_CHECKLIST.md`
 - Runbook de handoff para escola: `docs/SCHOOL_HANDOFF_RUNBOOK.md`
 - Evidências técnicas da release final (30/03/2026): `docs/FINAL_RELEASE_EVIDENCE_2026-03-30.md`

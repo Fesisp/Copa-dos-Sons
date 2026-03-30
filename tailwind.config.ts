@@ -13,45 +13,58 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Primary - Green (soccer field)
+        // Primary - Green (Gramado)
         'field': {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#145231',
+          50: '#e8fff2',
+          100: '#c6f8dd',
+          200: '#97efbf',
+          300: '#63e59f',
+          400: '#2fd97f',
+          500: '#009c3b',
+          600: '#008232',
+          700: '#00672a',
+          800: '#014f21',
+          900: '#003a18',
         },
-        // Secondary - Blue (uniform)
+        // Secondary - Blue (Ação primária)
         'uniform': {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#edf2ff',
+          100: '#d8e2ff',
+          200: '#b6c9ff',
+          300: '#91acff',
+          400: '#668bff',
+          500: '#002776',
+          600: '#002060',
+          700: '#00194b',
+          800: '#001338',
+          900: '#000d25',
+        },
+        // Gold highlights and rewards
+        'gold': {
+          50: '#fffbe6',
+          100: '#fff6bf',
+          200: '#ffef8a',
+          300: '#ffe755',
+          400: '#ffe126',
+          500: '#ffdf00',
+          600: '#e6c900',
+          700: '#bfa700',
+          800: '#988400',
+          900: '#706100',
         },
         // Feedback - Success
         'success': {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          500: '#22c55e',
-          600: '#16a34a',
+          50: '#f2fff8',
+          100: '#ddffec',
+          500: '#00b248',
+          600: '#00943c',
         },
         // Feedback - Error
         'error': {
-          50: '#fef2f2',
-          100: '#fee2e2',
-          500: '#ef4444',
-          600: '#dc2626',
+          50: '#fff2f1',
+          100: '#ffdedd',
+          500: '#ff3b30',
+          600: '#e22f24',
         },
         // Feedback - Warning
         'warning': {
@@ -93,25 +106,8 @@ const config: Config = {
         '4xl': ['48px', '56px'],
       },
       fontFamily: {
-        // Sans for body
-        sans: [
-          '"Segoe UI"',
-          'Roboto',
-          '"Helvetica Neue"',
-          'Arial',
-          'sans-serif',
-        ],
-        // Display for headings
-        display: ['"Comic Sans MS"', '"Comic Neue"', 'cursive', 'sans-serif'],
-      },
-      spacing: {
-        xs: '4px',
-        sm: '8px',
-        md: '12px',
-        lg: '16px',
-        xl: '24px',
-        '2xl': '32px',
-        '3xl': '48px',
+        sans: ['"Nunito"', '"Baloo 2"', '"Segoe UI"', 'sans-serif'],
+        display: ['"Fredoka"', '"Baloo 2"', '"Nunito"', 'cursive', 'sans-serif'],
       },
       borderRadius: {
         none: '0px',
@@ -131,6 +127,9 @@ const config: Config = {
         xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
         'card': '0 4px 12px rgba(0, 0, 0, 0.08)',
         'button': '0 2px 8px rgba(0, 0, 0, 0.12)',
+        'press': '0 8px 0 0 rgba(0, 0, 0, 0.2)',
+        'card-physical': '0 8px 0 0 rgba(0, 0, 0, 0.15), 0 16px 24px rgba(0, 0, 0, 0.22)',
+        'card-float': '0 22px 30px rgba(0, 0, 0, 0.32)',
       },
       animation: {
         'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -138,6 +137,9 @@ const config: Config = {
         'shake': 'shake 0.5s infinite',
         'slide-in': 'slide-in 0.3s ease-out',
         'fade-in': 'fade-in 0.3s ease-out',
+        'holo-sweep': 'holo-sweep 2.2s linear infinite',
+        'camera-shake': 'camera-shake 0.35s ease-in-out',
+        'goal-pop': 'goal-pop 0.5s ease-out',
       },
       keyframes: {
         'shake': {
@@ -152,6 +154,22 @@ const config: Config = {
         'fade-in': {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
+        },
+        'holo-sweep': {
+          '0%': { transform: 'translateX(-140%) rotate(25deg)' },
+          '100%': { transform: 'translateX(180%) rotate(25deg)' },
+        },
+        'camera-shake': {
+          '0%, 100%': { transform: 'translate3d(0, 0, 0)' },
+          '20%': { transform: 'translate3d(-6px, 2px, 0)' },
+          '40%': { transform: 'translate3d(5px, -3px, 0)' },
+          '60%': { transform: 'translate3d(-4px, 2px, 0)' },
+          '80%': { transform: 'translate3d(3px, -2px, 0)' },
+        },
+        'goal-pop': {
+          '0%': { transform: 'scale(0.6)', opacity: '0' },
+          '70%': { transform: 'scale(1.08)', opacity: '1' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
         },
       },
     },
