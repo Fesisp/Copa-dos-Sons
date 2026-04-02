@@ -9,6 +9,27 @@ export type MatchSource = 'official' | 'community';
 
 export type MatchStatus = 'idle' | 'playing' | 'victory' | 'review';
 
+export type GameplayMode = 'mission' | 'laboratory';
+
+export type GameFocus = 'phonemes' | 'words';
+
+export type DifficultyPhase = 1 | 2 | 3;
+
+export type AssemblyErrorReason =
+  | 'invalid_adjacency'
+  | 'slot_limit'
+  | 'phase_locked'
+  | 'occupied_slot'
+  | 'wrong_slot'
+  | 'invalid_drop';
+
+export interface AssemblyFeedback {
+  reason: AssemblyErrorReason;
+  message: string;
+  token?: string;
+  timestamp: number;
+}
+
 export type AppScreen =
   | 'vestiario'
   | 'album'
@@ -72,6 +93,13 @@ export interface GameStore {
   crowdDelta: number;
   isAudioPlaying: boolean;
   selectedCommunityWordId: string | null;
+  gameplayMode: GameplayMode;
+  gameFocus: GameFocus;
+  difficultyPhase: DifficultyPhase;
+  maxAssemblySlots: number;
+  missionCardPool: string[];
+  labAssemblySlots: string[];
+  lastAssemblyFeedback: AssemblyFeedback | null;
 
   // Actions
   setScreen: (screen: AppScreen) => void;
@@ -80,7 +108,14 @@ export interface GameStore {
   setCardsCatalog: (cards: Card[]) => void;
   startOfficialMatch: (match: OfficialMatch) => void;
   startCommunityMatch: (wordArray: string[], customWordId: string) => void;
+  startLaboratoryMode: () => void;
+  setGameplayMode: (mode: GameplayMode) => void;
+  setDifficultyPhase: (phase: DifficultyPhase) => void;
   handleDrop: (phonemeId: string, slotIndex: number) => boolean;
+  appendLabPhoneme: (phonemeId: string) => boolean;
+  removeLastLabPhoneme: () => void;
+  clearLabAssembly: () => void;
+  clearMatchAssembly: () => void;
   checkWordCompletion: () => boolean;
   unlockPhoneme: (phonemeId: string) => void;
   addCrowd: (amount: number) => void;

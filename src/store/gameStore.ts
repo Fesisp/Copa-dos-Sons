@@ -9,16 +9,28 @@ import type { Card, GameStore, OfficialMatch, Player } from '../types';
 import { audioManager } from '../services/audioManager';
 import { celebrationService } from '../services/celebrationService';
 import { playerService } from '../services/databaseService';
+import {
+  canAttachPhoneme,
+  inferDifficultyPhaseByProgress,
+  isTokenUnlockedForPhase,
+  normalizePhonemeToken,
+} from '../config/phonotactics';
 
 const INITIAL_UNLOCKED = ['a', 'e', 'i', 'o', 'u'];
+const DEFAULT_MAX_ASSEMBLY_SLOTS = 6;
 
-const normalizeToken = (value: string): string =>
-  value
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '');
+const normalizeToken = normalizePhonemeToken;
+
+const randomize = <T>(items: T[]): T[] => [...items].sort(() => Math.random() - 0.5);
+
+const withIntruders = (target: string[], cardPool: string[], amount = 2): string[] => {
+  const normalizedTarget = new Set(target.map((item) => normalizeToken(item)));
+  const intruders = cardPool
+    .filter((item) => !normalizedTarget.has(normalizeToken(item)))
+    .slice(0, Math.max(0, amount));
+
+  return randomize([...target, ...intruders]);
+};
 
 const DEFAULT_CARDS: Card[] = [
   { id: 'a', phoneme: 'a', audioKey: 'a', leagueTier: 'serie-c', imageUrl: '/images/placeholder.png', isVowel: true },
@@ -67,6 +79,13 @@ const initialState = {
   crowdDelta: 0,
   isAudioPlaying: false,
   selectedCommunityWordId: null as string | null,
+  gameplayMode: 'mission' as const,
+  gameFocus: 'words' as const,
+  difficultyPhase: 1 as const,
+  maxAssemblySlots: DEFAULT_MAX_ASSEMBLY_SLOTS,
+  missionCardPool: [] as string[],
+  labAssemblySlots: [] as string[],
+  lastAssemblyFeedback: null,
 };
 
 export const useGameStore = create<GameStore>()(
@@ -82,6 +101,7 @@ export const useGameStore = create<GameStore>()(
     setCurrentPlayer: (player) => {
       set((state) => {
         state.currentPlayer = player;
+        state.difficultyPhase = inferDifficultyPhaseByProgress(player.completedOfficialMatchIds.length);
       });
     },
 
@@ -99,6 +119,7 @@ export const useGameStore = create<GameStore>()(
 
       set((state) => {
         state.currentPlayer = player;
+        state.difficultyPhase = 1;
       });
 
       return player;
@@ -111,35 +132,89 @@ export const useGameStore = create<GameStore>()(
     },
 
     startOfficialMatch: (match: OfficialMatch) => {
-      const shuffled = [...match.targetWord].sort(() => Math.random() - 0.5);
+      const state = get();
+      const unlockedSet = new Set(state.currentPlayer?.unlockedPhonemes ?? INITIAL_UNLOCKED);
+      const allowedPool = state.cardsCatalog
+        .filter((card) => unlockedSet.has(card.id))
+        .map((card) => normalizeToken(card.audioKey))
+        .filter((token) => isTokenUnlockedForPhase(token, state.difficultyPhase));
+
+      const targetWord = match.targetWord
+        .map((item) => normalizeToken(item))
+        .slice(0, state.maxAssemblySlots);
+
+      const missionPool = withIntruders(targetWord, allowedPool, Math.min(3, Math.max(1, targetWord.length - 1)));
 
       set((state) => {
         state.currentMatchSource = 'official';
+        state.gameplayMode = 'mission';
+        state.gameFocus = 'words';
         state.matchStatus = 'playing';
         state.currentOfficialMatch = match;
-        state.targetWord = [...match.targetWord];
-        state.availableCards = shuffled;
-        state.assembledSlots = new Array(match.targetWord.length).fill(null);
+        state.targetWord = targetWord;
+        state.availableCards = randomize(missionPool);
+        state.missionCardPool = [...missionPool];
+        state.assembledSlots = new Array(targetWord.length).fill(null);
         state.crowdDelta = 0;
         state.selectedCommunityWordId = null;
+        state.lastAssemblyFeedback = null;
         state.currentScreen = 'match';
       });
     },
 
     startCommunityMatch: (wordArray: string[], customWordId: string) => {
       const normalized = wordArray.map((item) => normalizeToken(item)).filter(Boolean);
-      const shuffled = [...normalized].sort(() => Math.random() - 0.5);
+      const state = get();
+      const trimmed = normalized.slice(0, state.maxAssemblySlots);
+      const unlockedSet = new Set(state.currentPlayer?.unlockedPhonemes ?? INITIAL_UNLOCKED);
+      const allowedPool = state.cardsCatalog
+        .filter((card) => unlockedSet.has(card.id))
+        .map((card) => normalizeToken(card.audioKey))
+        .filter((token) => isTokenUnlockedForPhase(token, state.difficultyPhase));
+      const missionPool = withIntruders(trimmed, allowedPool, Math.min(2, Math.max(1, trimmed.length - 1)));
 
       set((state) => {
         state.currentMatchSource = 'community';
+        state.gameplayMode = 'mission';
+        state.gameFocus = 'words';
         state.matchStatus = 'playing';
         state.currentOfficialMatch = null;
-        state.targetWord = normalized;
-        state.availableCards = shuffled;
-        state.assembledSlots = new Array(normalized.length).fill(null);
+        state.targetWord = trimmed;
+        state.availableCards = randomize(missionPool);
+        state.missionCardPool = [...missionPool];
+        state.assembledSlots = new Array(trimmed.length).fill(null);
         state.selectedCommunityWordId = customWordId;
         state.crowdDelta = 0;
+        state.lastAssemblyFeedback = null;
         state.currentScreen = 'match';
+      });
+    },
+
+    startLaboratoryMode: () => {
+      set((state) => {
+        state.gameplayMode = 'laboratory';
+        state.gameFocus = 'phonemes';
+        state.matchStatus = 'idle';
+        state.currentMatchSource = 'community';
+        state.currentOfficialMatch = null;
+        state.targetWord = [];
+        state.availableCards = [];
+        state.assembledSlots = [];
+        state.missionCardPool = [];
+        state.lastAssemblyFeedback = null;
+      });
+    },
+
+    setGameplayMode: (mode) => {
+      set((state) => {
+        state.gameplayMode = mode;
+        state.gameFocus = mode === 'laboratory' ? 'phonemes' : 'words';
+      });
+    },
+
+    setDifficultyPhase: (phase) => {
+      set((state) => {
+        state.difficultyPhase = phase;
       });
     },
 
@@ -151,21 +226,57 @@ export const useGameStore = create<GameStore>()(
       }
 
       if (slotIndex < 0 || slotIndex >= state.targetWord.length) {
+        set((draft) => {
+          draft.lastAssemblyFeedback = {
+            reason: 'invalid_drop',
+            message: 'Essa jogada saiu da área válida.',
+            token: normalizeToken(phonemeId),
+            timestamp: Date.now(),
+          };
+        });
         return false;
       }
 
       if (state.assembledSlots[slotIndex] !== null) {
+        set((draft) => {
+          draft.lastAssemblyFeedback = {
+            reason: 'occupied_slot',
+            message: 'Este espaço já está ocupado.',
+            token: normalizeToken(phonemeId),
+            timestamp: Date.now(),
+          };
+        });
         return false;
       }
 
       const normalized = normalizeToken(phonemeId);
       const expected = normalizeToken(state.targetWord[slotIndex]);
+      const leftNeighbor = slotIndex > 0 ? state.assembledSlots[slotIndex - 1] : null;
+      const rightNeighbor = slotIndex < state.assembledSlots.length - 1 ? state.assembledSlots[slotIndex + 1] : null;
+      const leftAllowed = canAttachPhoneme(leftNeighbor, normalized, 3, { enforcePhasePattern: false });
+      const rightAllowed = rightNeighbor
+        ? canAttachPhoneme(normalized, rightNeighbor, 3, { enforcePhasePattern: false })
+        : true;
+
+      if (!leftAllowed || !rightAllowed) {
+        set((draft) => {
+          draft.lastAssemblyFeedback = {
+            reason: 'invalid_adjacency',
+            message: 'Combinação fonêmica impossível neste ponto.',
+            token: normalized,
+            timestamp: Date.now(),
+          };
+        });
+        return false;
+      }
+
       const isCorrect = normalized === expected;
 
       set((draft) => {
         if (isCorrect) {
           draft.assembledSlots[slotIndex] = expected;
           draft.crowdDelta += 100;
+          draft.lastAssemblyFeedback = null;
 
           const consumedIndex = draft.availableCards.findIndex(
             (item) => normalizeToken(item) === normalized
@@ -173,6 +284,13 @@ export const useGameStore = create<GameStore>()(
           if (consumedIndex >= 0) {
             draft.availableCards.splice(consumedIndex, 1);
           }
+        } else {
+          draft.lastAssemblyFeedback = {
+            reason: 'wrong_slot',
+            message: 'Peça válida, mas no lugar incorreto da missão.',
+            token: normalized,
+            timestamp: Date.now(),
+          };
         }
       });
 
@@ -181,6 +299,83 @@ export const useGameStore = create<GameStore>()(
       }
 
       return isCorrect;
+    },
+
+    appendLabPhoneme: (phonemeId: string) => {
+      const state = get();
+      const normalized = normalizeToken(phonemeId);
+
+      if (!isTokenUnlockedForPhase(normalized, state.difficultyPhase)) {
+        set((draft) => {
+          draft.lastAssemblyFeedback = {
+            reason: 'phase_locked',
+            message: 'Esse fonema será liberado nas próximas fases.',
+            token: normalized,
+            timestamp: Date.now(),
+          };
+        });
+        return false;
+      }
+
+      if (state.labAssemblySlots.length >= state.maxAssemblySlots) {
+        set((draft) => {
+          draft.lastAssemblyFeedback = {
+            reason: 'slot_limit',
+            message: `Limite de ${state.maxAssemblySlots} slots atingido.`,
+            token: normalized,
+            timestamp: Date.now(),
+          };
+        });
+        return false;
+      }
+
+      const previousToken = state.labAssemblySlots[state.labAssemblySlots.length - 1] ?? null;
+      const canAttach = canAttachPhoneme(previousToken, normalized, state.difficultyPhase, {
+        enforcePhasePattern: true,
+      });
+
+      if (!canAttach) {
+        set((draft) => {
+          draft.lastAssemblyFeedback = {
+            reason: 'invalid_adjacency',
+            message: 'Esta junção não forma estrutura pronunciável nesta fase.',
+            token: normalized,
+            timestamp: Date.now(),
+          };
+        });
+        return false;
+      }
+
+      set((draft) => {
+        draft.labAssemblySlots.push(normalized);
+        draft.lastAssemblyFeedback = null;
+      });
+
+      return true;
+    },
+
+    removeLastLabPhoneme: () => {
+      set((state) => {
+        state.labAssemblySlots.pop();
+        state.lastAssemblyFeedback = null;
+      });
+    },
+
+    clearLabAssembly: () => {
+      set((state) => {
+        state.labAssemblySlots = [];
+        state.lastAssemblyFeedback = null;
+      });
+    },
+
+    clearMatchAssembly: () => {
+      set((state) => {
+        if (state.targetWord.length === 0) return;
+
+        state.assembledSlots = new Array(state.targetWord.length).fill(null);
+        state.availableCards = [...state.missionCardPool];
+        state.lastAssemblyFeedback = null;
+      });
     },
 
     checkWordCompletion: () => {
@@ -223,6 +418,12 @@ export const useGameStore = create<GameStore>()(
           if (currentPlayer) {
             void playerService.markOfficialMatchCompleted(currentPlayer.id, currentOfficialMatch.id);
           }
+
+          const completedCount = (currentPlayer?.completedOfficialMatchIds.length ?? 0) + 1;
+          const nextPhase = inferDifficultyPhaseByProgress(completedCount);
+          set((draft) => {
+            draft.difficultyPhase = nextPhase;
+          });
         }
 
         if (currentPlayer && crowdDelta > 0) {
@@ -271,9 +472,11 @@ export const useGameStore = create<GameStore>()(
         state.currentOfficialMatch = null;
         state.targetWord = [];
         state.availableCards = [];
+        state.missionCardPool = [];
         state.assembledSlots = [];
         state.crowdDelta = 0;
         state.selectedCommunityWordId = null;
+        state.lastAssemblyFeedback = null;
       });
     },
   }))

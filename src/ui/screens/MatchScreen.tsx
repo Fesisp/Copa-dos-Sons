@@ -25,9 +25,14 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
   const matchSource = useGameStore((s) => s.currentMatchSource);
   const selectedCommunityWordId = useGameStore((s) => s.selectedCommunityWordId);
   const crowdDelta = useGameStore((s) => s.crowdDelta);
+  const difficultyPhase = useGameStore((s) => s.difficultyPhase);
+  const gameplayMode = useGameStore((s) => s.gameplayMode);
+  const maxAssemblySlots = useGameStore((s) => s.maxAssemblySlots);
+  const lastAssemblyFeedback = useGameStore((s) => s.lastAssemblyFeedback);
 
   const handleDrop = useGameStore((s) => s.handleDrop);
   const resetCurrentMatch = useGameStore((s) => s.resetCurrentMatch);
+  const clearMatchAssembly = useGameStore((s) => s.clearMatchAssembly);
 
   const findSlotByPoint = (point: { x: number; y: number }): number | null => {
     for (let index = 0; index < slotRefs.current.length; index += 1) {
@@ -79,6 +84,9 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
           <div className="px-6 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white font-display font-bold shadow-lg">
             {matchSource === 'official' ? '🏆 Partida Oficial' : '🤝 Desafio da Turma'}
           </div>
+          <div className="hidden md:block px-4 py-2 rounded-full bg-white/20 border border-white/30 text-white text-xs font-display font-bold uppercase tracking-wider">
+            {gameplayMode === 'mission' ? 'Modo Missão' : 'Modo Laboratório'} · Fase {difficultyPhase}
+          </div>
           <div className="w-[100px]" />
         </div>
 
@@ -106,6 +114,26 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
                 isCompleted={matchStatus === 'victory'}
               />
             ))}
+          </div>
+
+          {lastAssemblyFeedback && matchStatus === 'playing' && (
+            <div className="mb-6 px-4 py-2 rounded-2xl bg-white/90 border border-error-300 text-error-700 font-display font-bold text-sm">
+              {lastAssemblyFeedback.message}
+            </div>
+          )}
+
+          <div className="mb-8 flex flex-wrap justify-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={clearMatchAssembly}
+              disabled={matchStatus !== 'playing'}
+            >
+              Resetar Tentativa
+            </Button>
+            <div className="px-3 py-2 rounded-xl bg-black/30 text-white text-xs font-display font-bold uppercase tracking-wider">
+              Limite: {maxAssemblySlots} slots
+            </div>
           </div>
         </div>
 
