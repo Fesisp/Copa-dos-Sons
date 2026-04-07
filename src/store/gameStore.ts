@@ -9,6 +9,7 @@ import type { Card, GameStore, OfficialMatch, Player } from '../types';
 import { audioManager } from '../services/audioManager';
 import { celebrationService } from '../services/celebrationService';
 import { playerService } from '../services/databaseService';
+import { agentService } from '../services/autonomousAgent';
 import {
   canAttachPhoneme,
   inferDifficultyPhaseByProgress,
@@ -86,6 +87,10 @@ const initialState = {
   missionCardPool: [] as string[],
   labAssemblySlots: [] as string[],
   lastAssemblyFeedback: null,
+  isAgentTurn: false,
+  agentMode: true,
+  agentDifficulty: 'medium' as const,
+  agentProfile: agentService.getAgentProfile(),
 };
 
 export const useGameStore = create<GameStore>()(
@@ -155,6 +160,7 @@ export const useGameStore = create<GameStore>()(
         state.availableCards = randomize(missionPool);
         state.missionCardPool = [...missionPool];
         state.assembledSlots = new Array(targetWord.length).fill(null);
+        state.isAgentTurn = false;
         state.crowdDelta = 0;
         state.selectedCommunityWordId = null;
         state.lastAssemblyFeedback = null;
@@ -183,6 +189,7 @@ export const useGameStore = create<GameStore>()(
         state.availableCards = randomize(missionPool);
         state.missionCardPool = [...missionPool];
         state.assembledSlots = new Array(trimmed.length).fill(null);
+        state.isAgentTurn = false;
         state.selectedCommunityWordId = customWordId;
         state.crowdDelta = 0;
         state.lastAssemblyFeedback = null;
@@ -201,6 +208,7 @@ export const useGameStore = create<GameStore>()(
         state.availableCards = [];
         state.assembledSlots = [];
         state.missionCardPool = [];
+        state.isAgentTurn = false;
         state.lastAssemblyFeedback = null;
       });
     },
@@ -215,6 +223,105 @@ export const useGameStore = create<GameStore>()(
     setDifficultyPhase: (phase) => {
       set((state) => {
         state.difficultyPhase = phase;
+      });
+    },
+
+    setAgentMode: (enabled) => {
+      set((state) => {
+        state.agentMode = enabled;
+        state.isAgentTurn = false;
+      });
+    },
+
+    setAgentDifficulty: (difficulty) => {
+      agentService.setDifficulty(difficulty);
+      set((state) => {
+        state.agentDifficulty = difficulty;
+      });
+    },
+
+    passTurn: () => {
+      set((state) => {
+        state.isAgentTurn = !state.isAgentTurn;
+      });
+
+      const current = get();
+      if (current.isAgentTurn && current.agentMode) {
+        window.setTimeout(() => {
+          get().executeAgentMove();
+        }, 1500);
+      }
+    },
+
+    executeAgentMove: () => {
+      const state = get();
+
+      if (!state.agentMode || !state.isAgentTurn || state.matchStatus !== 'playing') {
+        return;
+      }
+
+      const firstOpenSlot = state.assembledSlots.findIndex((slot) => slot === null);
+      if (firstOpenSlot < 0) {
+        set((draft) => {
+          draft.isAgentTurn = false;
+        });
+        return;
+      }
+
+      const availablePhonemes = state.availableCards
+        .map((token, index) => {
+          const normalized = normalizeToken(token);
+          const known = state.cardsCatalog.find(
+            (card) => normalizeToken(card.audioKey) === normalized || normalizeToken(card.id) === normalized
+          );
+
+          if (!known) {
+            return null;
+          }
+
+          return {
+            ...known,
+            id: `${known.id}-agent-${index}`,
+          };
+        })
+        .filter((item): item is Card => item !== null);
+
+      const currentBoard = state.assembledSlots
+        .filter((slot): slot is string => !!slot)
+        .map((slot, index) => {
+          const normalized = normalizeToken(slot);
+          const known = state.cardsCatalog.find(
+            (card) => normalizeToken(card.audioKey) === normalized || normalizeToken(card.id) === normalized
+          );
+
+          return (
+            known ?? {
+              id: `${normalized}-board-${index}`,
+              phoneme: normalized,
+              audioKey: normalized,
+              leagueTier: 'serie-c' as const,
+              imageUrl: '/images/placeholder.png',
+            }
+          );
+        });
+
+      const move = agentService.calculateNextMove(availablePhonemes, currentBoard, {
+        targetWord: state.targetWord,
+        slotIndex: firstOpenSlot,
+        phase: state.difficultyPhase,
+      });
+
+      if (move) {
+        const didPlay = get().handleDrop(move.audioKey, firstOpenSlot);
+        if (didPlay) {
+          void audioManager.playUiTapSound();
+        } else {
+          void audioManager.playNearMissSound();
+        }
+      }
+
+      set((draft) => {
+        draft.isAgentTurn = false;
       });
     },
 
@@ -430,6 +537,7 @@ export const useGameStore = create<GameStore>()(
           get().addCrowd(crowdDelta);
         }
 
+        void audioManager.play('acerto');
         celebrationService.goalExplosion();
         void audioManager.playGoalSound();
       }
@@ -474,6 +582,7 @@ export const useGameStore = create<GameStore>()(
         state.availableCards = [];
         state.missionCardPool = [];
         state.assembledSlots = [];
+        state.isAgentTurn = false;
         state.crowdDelta = 0;
         state.selectedCommunityWordId = null;
         state.lastAssemblyFeedback = null;

@@ -228,6 +228,10 @@ class AudioManager {
     });
   }
 
+  async play(key: string): Promise<void> {
+    await this.playPhoneme(key);
+  }
+
   /**
    * Resolve requested key to an available key in index
    */

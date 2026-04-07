@@ -18,10 +18,10 @@ export const DropZone = React.forwardRef<HTMLDivElement, DropZoneProps>(
           font-display text-2xl font-bold uppercase transition-all
           ${value ? 'bg-field-500 text-white border-field-800 shadow-[0_8px_0_0_rgba(0,0,0,0.14)]' : 'bg-white/90 text-neutral-400 border-dashed border-white/70 shadow-[0_6px_0_0_rgba(0,0,0,0.1)]'}
           ${isCompleted ? 'ring-4 ring-gold-300 goal-flash' : ''}
-          ${isActive ? 'ring-4 ring-uniform-300 scale-105 bg-gold-50' : ''}
+          ${isActive ? 'ring-4 ring-uniform-300 scale-105 bg-gold-50 shadow-[0_0_0_6px_rgba(34,197,94,0.25)]' : ''}
         `}
-        animate={isActive ? { scale: [1, 1.06, 1] } : { scale: 1 }}
-        transition={{ duration: 0.3 }}
+        animate={isActive ? { scale: [1, 1.08, 1], opacity: [0.95, 1, 0.98] } : { scale: 1, opacity: 1 }}
+        transition={{ duration: 0.26 }}
       >
         {value ?? '•'}
         <span className="sr-only">Slot {slotIndex + 1}</span>

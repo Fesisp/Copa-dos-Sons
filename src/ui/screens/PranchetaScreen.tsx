@@ -66,6 +66,7 @@ export const PranchetaScreen: React.FC<PranchetaScreenProps> = ({ onNavigate }) 
           </p>
           <div
             ref={compositionLaneRef}
+            data-testid="composition-lane"
             className={`flex flex-wrap gap-2 min-h-16 rounded-xl border-2 p-3 transition-all ${
               isLaneActive
                 ? 'border-gold-400 bg-gradient-to-r from-gold-50 to-white shadow-[0_0_0_4px_rgba(255,223,0,0.3)]'

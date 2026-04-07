@@ -72,6 +72,8 @@ export const PhonemeCard: React.FC<PhonemeCardProps> = ({
       drag={draggable && !isBlocked && resolvedStatus === 'idle'}
       dragSnapToOrigin={draggable}
       dragElastic={0.4}
+      dragMomentum={false}
+      dragTransition={{ bounceStiffness: 520, bounceDamping: 20 }}
       whileDrag={
         shouldReduceMotion
           ? { scale: 1.03, rotate: 0, zIndex: 50 }
@@ -93,6 +95,7 @@ export const PhonemeCard: React.FC<PhonemeCardProps> = ({
         }
       }}
       className={`relative cursor-pointer w-28 h-36 rounded-2xl overflow-hidden border-[6px] border-white shadow-card-physical flex-shrink-0 group ${glowClass} ${selectedClass} ${isBlocked ? 'opacity-50 grayscale cursor-not-allowed' : `bg-gradient-to-br ${cardTheme}`}`}
+      style={{ touchAction: draggable ? 'none' : 'auto' }}
     >
       {!isBlocked && (
         <div className="absolute inset-0 z-20 bg-gradient-to-tr from-white/0 via-white/50 to-white/0 -translate-x-full group-hover:animate-holo-sweep pointer-events-none" />

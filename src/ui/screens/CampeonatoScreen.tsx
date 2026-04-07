@@ -11,8 +11,12 @@ interface CampeonatoScreenProps {
 export const CampeonatoScreen: React.FC<CampeonatoScreenProps> = ({ onNavigate }) => {
   const [words, setWords] = useState<Array<CustomWord & { approvalRate?: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [playMode, setPlayMode] = useState<'coop' | 'versus'>('coop');
 
   const startCommunityMatch = useGameStore((s) => s.startCommunityMatch);
+  const setAgentMode = useGameStore((s) => s.setAgentMode);
+  const setAgentDifficulty = useGameStore((s) => s.setAgentDifficulty);
+  const passTurn = useGameStore((s) => s.passTurn);
 
   useEffect(() => {
     const load = async () => {
@@ -32,6 +36,37 @@ export const CampeonatoScreen: React.FC<CampeonatoScreenProps> = ({ onNavigate }
         <div className="flex items-center gap-4 mb-6">
           <Button variant="secondary" size="sm" onClick={() => onNavigate('vestiario')}>← Vestiário</Button>
           <h1 className="font-display text-3xl font-bold text-field-800">Campeonato da Turma</h1>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4 shadow-lg mb-5 border border-field-200">
+          <p className="font-display font-bold text-field-700 mb-2">Klayton — Agente Autônomo</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={playMode === 'coop' ? 'success' : 'secondary'}
+              size="sm"
+              onClick={() => {
+                setPlayMode('coop');
+                setAgentMode(true);
+                setAgentDifficulty('medium');
+              }}
+            >
+              Cooperação (com Klayton)
+            </Button>
+            <Button
+              variant={playMode === 'versus' ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => {
+                setPlayMode('versus');
+                setAgentMode(true);
+                setAgentDifficulty('hard');
+              }}
+            >
+              Versus (contra Klayton)
+            </Button>
+          </div>
+          <p className="text-xs text-neutral-700 mt-2">
+            No modo Versus, Klayton inicia o primeiro turno para aumentar o desafio.
+          </p>
         </div>
 
         {isLoading ? (
@@ -58,11 +93,16 @@ export const CampeonatoScreen: React.FC<CampeonatoScreenProps> = ({ onNavigate }
                     variant="primary"
                     size="md"
                     onClick={() => {
+                      setAgentMode(true);
+                      setAgentDifficulty(playMode === 'versus' ? 'hard' : 'medium');
                       startCommunityMatch(word.wordArray, word.id);
+                      if (playMode === 'versus') {
+                        window.setTimeout(() => passTurn(), 100);
+                      }
                       onNavigate('match');
                     }}
                   >
-                    Jogar
+                    {playMode === 'versus' ? 'Jogar Versus' : 'Jogar com Klayton'}
                   </Button>
                 </div>
               </div>

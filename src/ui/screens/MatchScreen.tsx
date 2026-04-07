@@ -4,13 +4,14 @@ import { Button, DropZone, PhonemeCard } from '../components';
 import { useGameStore } from '../../store/gameStore';
 import { audioManager } from '../../services/audioManager';
 import { customWordService } from '../../services/databaseService';
-import type { AppScreen, Card } from '../../types';
+import type { AgentDifficulty, AppScreen, Card } from '../../types';
 
 interface MatchScreenProps {
   onNavigate: (screen: AppScreen) => void;
 }
 
 export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
+  const difficultyOptions: AgentDifficulty[] = ['easy', 'medium', 'hard'];
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
   const [fieldShake, setFieldShake] = useState(false);
   const [wrongCardId, setWrongCardId] = useState<string | null>(null);
@@ -29,10 +30,17 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
   const gameplayMode = useGameStore((s) => s.gameplayMode);
   const maxAssemblySlots = useGameStore((s) => s.maxAssemblySlots);
   const lastAssemblyFeedback = useGameStore((s) => s.lastAssemblyFeedback);
+  const isAgentTurn = useGameStore((s) => s.isAgentTurn);
+  const agentMode = useGameStore((s) => s.agentMode);
+  const agentDifficulty = useGameStore((s) => s.agentDifficulty);
+  const agentProfile = useGameStore((s) => s.agentProfile);
 
   const handleDrop = useGameStore((s) => s.handleDrop);
   const resetCurrentMatch = useGameStore((s) => s.resetCurrentMatch);
   const clearMatchAssembly = useGameStore((s) => s.clearMatchAssembly);
+  const passTurn = useGameStore((s) => s.passTurn);
+  const setAgentMode = useGameStore((s) => s.setAgentMode);
+  const setAgentDifficulty = useGameStore((s) => s.setAgentDifficulty);
 
   const findSlotByPoint = (point: { x: number; y: number }): number | null => {
     for (let index = 0; index < slotRefs.current.length; index += 1) {
@@ -90,7 +98,45 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
           <div className="w-[100px]" />
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="p-4 mb-5 rounded-2xl bg-white/12 border border-white/20 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-white font-display text-xl font-bold">
+              {agentMode
+                ? (isAgentTurn ? `${agentProfile.name} está pensando...` : 'Sua vez, Craque!')
+                : 'Modo solo: sem agente'}
+            </div>
+            <div className={`transition-all ${agentMode && isAgentTurn ? 'scale-110 opacity-100' : 'opacity-60'} text-white flex items-center gap-2`}>
+              <span className="text-3xl">{agentProfile.avatar}</span>
+              <span className="font-display text-lg">{agentProfile.name}</span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant={agentMode ? 'success' : 'secondary'}
+              size="sm"
+              onClick={() => setAgentMode(!agentMode)}
+              disabled={isAgentTurn}
+            >
+              {agentMode ? 'Agente ON' : 'Agente OFF'}
+            </Button>
+
+            {difficultyOptions.map((level) => (
+              <Button
+                key={level}
+                variant={agentDifficulty === level ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setAgentDifficulty(level)}
+                disabled={!agentMode || isAgentTurn}
+                className={agentDifficulty === level ? 'ring-2 ring-gold-300/70' : ''}
+              >
+                {level.toUpperCase()}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className={`flex-1 flex flex-col items-center justify-center ${isAgentTurn ? 'pointer-events-none opacity-80' : ''}`}>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -152,7 +198,7 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
                 phoneme={card}
                 status={wrongCardId === card.id ? 'incorrect' : 'idle'}
                 variant="normal"
-                draggable={matchStatus === 'playing'}
+                draggable={matchStatus === 'playing' && !isAgentTurn}
                 onClick={() => void audioManager.playPhoneme(card.audioKey)}
                 onDragMove={(_id, point) => {
                   const slotIndex = findSlotByPoint(point);
@@ -172,6 +218,9 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
                     window.setTimeout(() => setFieldShake(false), 400);
                   } else {
                     void audioManager.playSuccessSound();
+                    if (agentMode && useGameStore.getState().matchStatus === 'playing') {
+                      passTurn();
+                    }
                   }
                 }}
               />

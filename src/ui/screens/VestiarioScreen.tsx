@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '../components';
 import { useGameStore } from '../../store/gameStore';
+import { customWordService } from '../../services/databaseService';
 import type { AppScreen } from '../../types';
 import { prefetchScreens } from './screenLoaders';
 
@@ -11,7 +12,25 @@ interface VestiarioScreenProps {
 
 export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) => {
   const player = useGameStore((s) => s.currentPlayer);
+  const difficultyPhase = useGameStore((s) => s.difficultyPhase);
   const unlockedCount = player?.unlockedPhonemes.length ?? 0;
+  const completedMatches = player?.completedOfficialMatchIds.length ?? 0;
+  const [createdWords, setCreatedWords] = React.useState(0);
+
+  React.useEffect(() => {
+    const loadCreatedWords = async () => {
+      if (!player) {
+        setCreatedWords(0);
+        return;
+      }
+
+      const allWords = await customWordService.getAllCustomWords();
+      const totalByPlayer = allWords.filter((word) => word.creatorName.toLowerCase() === player.name.toLowerCase()).length;
+      setCreatedWords(totalByPlayer);
+    };
+
+    void loadCreatedWords();
+  }, [player]);
 
   const buildIntentPrefetchProps = (screens: AppScreen[]) => {
     const prefetch = () => prefetchScreens(screens);
@@ -39,7 +58,7 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
           initial={{ y: -12, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
             <div>
               <p className="text-sm text-neutral-500">Saldo da Torcida</p>
               <p className="font-display text-4xl text-field-700 font-extrabold">{player?.crowd ?? 0}</p>
@@ -51,6 +70,14 @@ export const VestiarioScreen: React.FC<VestiarioScreenProps> = ({ onNavigate }) 
             <div>
               <p className="text-sm text-neutral-500">Elenco</p>
               <p className="font-display text-xl text-neutral-700 font-bold">{player?.name ?? 'Novo Craque'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-neutral-500">Partidas Oficiais</p>
+              <p className="font-display text-2xl text-field-700 font-bold">{completedMatches}</p>
+            </div>
+            <div>
+              <p className="text-sm text-neutral-500">Fase / Táticas</p>
+              <p className="font-display text-2xl text-field-700 font-bold">F{difficultyPhase} · {createdWords}</p>
             </div>
           </div>
         </motion.div>

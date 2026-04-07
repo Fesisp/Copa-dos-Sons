@@ -8,11 +8,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'auto',
       includeAssets: [
         'favicon.svg',
         'icon-ball.svg',
         'icon-trophy.svg',
         'icon-192x192.png',
+        'audio/phonemes-sprite.mp3',
+        'audio/phonemes-index.json',
       ],
       manifest: {
         name: 'Copa dos Sons',
@@ -40,6 +43,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,m4a,wav,json}'],
         runtimeCaching: [
           {
@@ -54,10 +60,27 @@ export default defineConfig({
             },
           },
           {
+            urlPattern: /\/audio\/(phonemes-sprite\.mp3|phonemes-index\.json)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'audio-sprite-core-cache',
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+              expiration: {
+                maxEntries: 8,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+            },
+          },
+          {
             urlPattern: /\/audio\/.*\.(mp3|m4a|wav)$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'audio-cache',
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days

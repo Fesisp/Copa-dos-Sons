@@ -49,6 +49,16 @@ export interface Card {
   isVowel?: boolean;
 }
 
+export type Phoneme = Card;
+
+export type AgentDifficulty = 'easy' | 'medium' | 'hard';
+
+export interface AgentProfile {
+  id: string;
+  name: string;
+  avatar: string;
+}
+
 export interface OfficialMatch {
   id: string;
   leagueTier: LeagueTier;
@@ -100,6 +110,10 @@ export interface GameStore {
   missionCardPool: string[];
   labAssemblySlots: string[];
   lastAssemblyFeedback: AssemblyFeedback | null;
+  isAgentTurn: boolean;
+  agentMode: boolean;
+  agentDifficulty: AgentDifficulty;
+  agentProfile: AgentProfile;
 
   // Actions
   setScreen: (screen: AppScreen) => void;
@@ -111,6 +125,10 @@ export interface GameStore {
   startLaboratoryMode: () => void;
   setGameplayMode: (mode: GameplayMode) => void;
   setDifficultyPhase: (phase: DifficultyPhase) => void;
+  setAgentMode: (enabled: boolean) => void;
+  setAgentDifficulty: (difficulty: AgentDifficulty) => void;
+  passTurn: () => void;
+  executeAgentMove: () => void;
   handleDrop: (phonemeId: string, slotIndex: number) => boolean;
   appendLabPhoneme: (phonemeId: string) => boolean;
   removeLastLabPhoneme: () => void;

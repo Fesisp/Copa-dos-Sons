@@ -8,7 +8,10 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "audio:sprite": "node scripts/generate-sprite.js"
+    "audio:sprite": "node scripts/generate-sprite.js",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:headed": "playwright test --headed"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.2",
@@ -24,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.59.1",
     "@types/howler": "^2.2.12",
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
