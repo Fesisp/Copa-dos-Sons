@@ -12,7 +12,7 @@ Este registro consolida as 5 pendências finais de entrega para a escola e o que
 
 ## 2) Configuração final de produção
 
-- Variável de PIN docente definida por ambiente: `VITE_TEACHER_REPORT_PIN`.
+- Variável de PIN docente definida por ambiente com hash SHA-256: `VITE_TEACHER_REPORT_PIN_SHA256`.
 - Template de produção criado: `.env.production.example`.
 - Resultado: **concluído tecnicamente** (falta apenas aplicar PIN real no ambiente da escola).
 
@@ -37,6 +37,15 @@ Este registro consolida as 5 pendências finais de entrega para a escola e o que
   - `audio/phonemes-sprite.mp3`
   - `audio/phonemes-index.json`
   - Runtime route de áudio: `/\\/audio\\/.*\\.(mp3|m4a|wav)$/`
+
+## 4.1) Auditoria Lighthouse/PWA
+
+- Procedimento recomendado:
+  1. Executar `npm run build`.
+  2. Executar `npm run preview`.
+  3. Rodar `npx lighthouse http://localhost:4173 --preset=desktop --only-categories=performance,accessibility,best-practices,pwa --output=html --output-path=./docs/lighthouse-report.html`.
+- Meta de aceitação para entrega: notas >= 90 em `Performance`, `Accessibility`, `Best Practices` e `PWA`.
+- Evidência esperada: arquivo `docs/lighthouse-report.html` anexado ao pacote de homologação.
 
 ## 5) Handoff formal
 
@@ -64,5 +73,5 @@ Pacote final disponível:
 
 1. Executar GO/NO-GO em dispositivo real da escola.
 2. Validar fluxo completo em modo offline (`Network -> Offline`) com equipe pedagógica.
-3. Definir e aplicar PIN docente real de produção no ambiente da escola.
+3. Definir PIN docente real, gerar hash SHA-256 e aplicar no ambiente da escola.
 4. Registrar assinaturas de aceite (QA técnico + coordenação pedagógica).

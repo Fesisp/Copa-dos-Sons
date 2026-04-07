@@ -1,3 +1,9 @@
+/**
+ * Local autonomous AI agent used as the second player in offline matches.
+ * It selects phoneme moves based on difficulty and phonotactic constraints,
+ * providing deterministic educational gameplay without external services.
+ */
+
 import { db } from './databaseService';
 import {
   canAttachPhoneme,

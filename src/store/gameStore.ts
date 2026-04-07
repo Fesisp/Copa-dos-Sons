@@ -1,6 +1,6 @@
 /**
- * Zustand Store - Global State Management
- * Clean-slate Craque Fônico inventory and match state
+ * Global Zustand store for Copa dos Sons gameplay state.
+ * Manages player progress, official/community match flow, cards, and agent interactions.
  */
 
 import { create } from 'zustand';
@@ -80,8 +80,9 @@ const initialState = {
   crowdDelta: 0,
   isAudioPlaying: false,
   selectedCommunityWordId: null as string | null,
-  gameplayMode: 'mission' as const,
+  gameplayMode: 'treino_chute' as const,
   gameFocus: 'words' as const,
+  communityPlayMode: 'coop' as const,
   difficultyPhase: 1 as const,
   maxAssemblySlots: DEFAULT_MAX_ASSEMBLY_SLOTS,
   missionCardPool: [] as string[],
@@ -91,6 +92,14 @@ const initialState = {
   agentMode: true,
   agentDifficulty: 'medium' as const,
   agentProfile: agentService.getAgentProfile(),
+  versusScore: {
+    student: 0,
+    agent: 0,
+  },
+  timerSeconds: 0,
+  playerScore: 0,
+  klaytonScore: 0,
+  varMistakeIndex: null as number | null,
 };
 
 export const useGameStore = create<GameStore>()(
@@ -153,6 +162,7 @@ export const useGameStore = create<GameStore>()(
       set((state) => {
         state.currentMatchSource = 'official';
         state.gameplayMode = 'mission';
+        state.communityPlayMode = 'coop';
         state.gameFocus = 'words';
         state.matchStatus = 'playing';
         state.currentOfficialMatch = match;
@@ -164,6 +174,9 @@ export const useGameStore = create<GameStore>()(
         state.crowdDelta = 0;
         state.selectedCommunityWordId = null;
         state.lastAssemblyFeedback = null;
+        state.versusScore = { student: 0, agent: 0 };
+        state.timerSeconds = 0;
+        state.varMistakeIndex = null;
         state.currentScreen = 'match';
       });
     },
@@ -193,7 +206,106 @@ export const useGameStore = create<GameStore>()(
         state.selectedCommunityWordId = customWordId;
         state.crowdDelta = 0;
         state.lastAssemblyFeedback = null;
+        state.versusScore = { student: 0, agent: 0 };
+        state.timerSeconds = 0;
+        state.varMistakeIndex = null;
         state.currentScreen = 'match';
+      });
+    },
+
+    startTreinoChute: (targetPhonemeId: string) => {
+      const state = get();
+      const target = normalizeToken(targetPhonemeId);
+      const unlockedSet = new Set(state.currentPlayer?.unlockedPhonemes ?? INITIAL_UNLOCKED);
+
+      const distractors = randomize(
+        state.cardsCatalog
+          .filter((card) => unlockedSet.has(card.id))
+          .map((card) => normalizeToken(card.audioKey))
+          .filter((token) => token !== target)
+      ).slice(0, 2);
+
+      const missionPool = randomize([target, ...distractors]);
+
+      set((draft) => {
+        draft.currentMatchSource = 'official';
+        draft.gameplayMode = 'treino_chute';
+        draft.communityPlayMode = 'coop';
+        draft.gameFocus = 'phonemes';
+        draft.matchStatus = 'playing';
+        draft.currentOfficialMatch = null;
+        draft.targetWord = [target];
+        draft.availableCards = [...missionPool];
+        draft.missionCardPool = [...missionPool];
+        draft.assembledSlots = [null];
+        draft.isAgentTurn = false;
+        draft.crowdDelta = 0;
+        draft.selectedCommunityWordId = null;
+        draft.lastAssemblyFeedback = null;
+        draft.timerSeconds = 0;
+        draft.varMistakeIndex = null;
+        draft.currentScreen = 'match';
+      });
+
+      window.setTimeout(() => {
+        void audioManager.playPhoneme(target);
+      }, 500);
+    },
+
+    startPenaltisMode: (wordArray: string[], customWordId?: string) => {
+      const state = get();
+      const normalized = wordArray.map((item) => normalizeToken(item)).filter(Boolean);
+      const trimmed = normalized.slice(0, state.maxAssemblySlots);
+      const unlockedSet = new Set(state.currentPlayer?.unlockedPhonemes ?? INITIAL_UNLOCKED);
+      const allowedPool = state.cardsCatalog
+        .filter((card) => unlockedSet.has(card.id))
+        .map((card) => normalizeToken(card.audioKey))
+        .filter((token) => isTokenUnlockedForPhase(token, state.difficultyPhase));
+      const missionPool = withIntruders(trimmed, allowedPool, Math.min(3, Math.max(1, trimmed.length - 1)));
+
+      set((draft) => {
+        draft.currentMatchSource = 'community';
+        draft.gameplayMode = 'penaltis';
+        draft.gameFocus = 'words';
+        draft.matchStatus = 'playing';
+        draft.currentOfficialMatch = null;
+        draft.targetWord = trimmed;
+        draft.availableCards = randomize(missionPool);
+        draft.missionCardPool = [...missionPool];
+        draft.assembledSlots = new Array(trimmed.length).fill(null);
+        draft.isAgentTurn = false;
+        draft.selectedCommunityWordId = customWordId ?? null;
+        draft.crowdDelta = 0;
+        draft.lastAssemblyFeedback = null;
+        draft.timerSeconds = 15;
+        draft.currentScreen = 'match';
+      });
+    },
+
+    startVarMode: (correctWord: string[], mistakeIndex: number, wrongPhoneme: string) => {
+      const normalizedWord = correctWord.map((item) => normalizeToken(item)).filter(Boolean);
+      const safeIndex = Math.max(0, Math.min(mistakeIndex, Math.max(0, normalizedWord.length - 1)));
+      const corruptedWord = [...normalizedWord];
+      corruptedWord[safeIndex] = normalizeToken(wrongPhoneme);
+      const missionPool = withIntruders(normalizedWord, normalizedWord, 0);
+
+      set((draft) => {
+        draft.currentMatchSource = 'community';
+        draft.gameplayMode = 'var_juiz';
+        draft.gameFocus = 'words';
+        draft.matchStatus = 'playing';
+        draft.currentOfficialMatch = null;
+        draft.targetWord = normalizedWord;
+        draft.availableCards = randomize(missionPool);
+        draft.missionCardPool = [...missionPool];
+        draft.assembledSlots = corruptedWord.map((token) => token ?? null);
+        draft.varMistakeIndex = safeIndex;
+        draft.isAgentTurn = false;
+        draft.selectedCommunityWordId = null;
+        draft.crowdDelta = 0;
+        draft.lastAssemblyFeedback = null;
+        draft.timerSeconds = 0;
+        draft.currentScreen = 'match';
       });
     },
 
@@ -210,13 +322,38 @@ export const useGameStore = create<GameStore>()(
         state.missionCardPool = [];
         state.isAgentTurn = false;
         state.lastAssemblyFeedback = null;
+        state.timerSeconds = 0;
+        state.varMistakeIndex = null;
       });
     },
 
     setGameplayMode: (mode) => {
       set((state) => {
         state.gameplayMode = mode;
-        state.gameFocus = mode === 'laboratory' ? 'phonemes' : 'words';
+        state.gameFocus = mode === 'laboratory' || mode === 'treino_chute' ? 'phonemes' : 'words';
+      });
+    },
+
+    setTimerSeconds: (seconds: number) => {
+      set((state) => {
+        state.timerSeconds = Math.max(0, Math.floor(seconds));
+      });
+    },
+
+    registerPenaltisGoal: (by) => {
+      set((state) => {
+        if (by === 'player') {
+          state.playerScore += 1;
+        } else {
+          state.klaytonScore += 1;
+        }
+      });
+    },
+
+    setCommunityPlayMode: (mode) => {
+      set((state) => {
+        state.communityPlayMode = mode;
+        state.versusScore = { student: 0, agent: 0 };
       });
     },
 
@@ -344,7 +481,7 @@ export const useGameStore = create<GameStore>()(
         return false;
       }
 
-      if (state.assembledSlots[slotIndex] !== null) {
+      if (state.assembledSlots[slotIndex] !== null && !(state.gameplayMode === 'var_juiz' && state.varMistakeIndex === slotIndex)) {
         set((draft) => {
           draft.lastAssemblyFeedback = {
             reason: 'occupied_slot',
@@ -383,6 +520,13 @@ export const useGameStore = create<GameStore>()(
         if (isCorrect) {
           draft.assembledSlots[slotIndex] = expected;
           draft.crowdDelta += 100;
+          if (draft.currentMatchSource === 'community' && draft.communityPlayMode === 'versus') {
+            if (draft.isAgentTurn) {
+              draft.versusScore.agent += 1;
+            } else {
+              draft.versusScore.student += 1;
+            }
+          }
           draft.lastAssemblyFeedback = null;
 
           const consumedIndex = draft.availableCards.findIndex(
@@ -505,6 +649,11 @@ export const useGameStore = create<GameStore>()(
         set((draft) => {
           draft.matchStatus = 'victory';
           draft.crowdDelta += officialReward;
+
+          if (draft.gameplayMode === 'penaltis') {
+            draft.playerScore += 1;
+            draft.timerSeconds = 15;
+          }
         });
 
         const { currentOfficialMatch, currentPlayer, crowdDelta } = get();
@@ -514,6 +663,8 @@ export const useGameStore = create<GameStore>()(
         }
 
         if (state.currentMatchSource === 'official' && currentOfficialMatch?.id) {
+          const alreadyCompleted = currentPlayer?.completedOfficialMatchIds.includes(currentOfficialMatch.id) ?? false;
+
           set((draft) => {
             if (!draft.currentPlayer) return;
 
@@ -522,15 +673,15 @@ export const useGameStore = create<GameStore>()(
             }
           });
 
-          if (currentPlayer) {
+          if (!alreadyCompleted && currentPlayer) {
             void playerService.markOfficialMatchCompleted(currentPlayer.id, currentOfficialMatch.id);
-          }
 
-          const completedCount = (currentPlayer?.completedOfficialMatchIds.length ?? 0) + 1;
-          const nextPhase = inferDifficultyPhaseByProgress(completedCount);
-          set((draft) => {
-            draft.difficultyPhase = nextPhase;
-          });
+            const completedCount = (currentPlayer.completedOfficialMatchIds.length ?? 0) + 1;
+            const nextPhase = inferDifficultyPhaseByProgress(completedCount);
+            set((draft) => {
+              draft.difficultyPhase = nextPhase;
+            });
+          }
         }
 
         if (currentPlayer && crowdDelta > 0) {
@@ -586,6 +737,9 @@ export const useGameStore = create<GameStore>()(
         state.crowdDelta = 0;
         state.selectedCommunityWordId = null;
         state.lastAssemblyFeedback = null;
+        state.versusScore = { student: 0, agent: 0 };
+        state.timerSeconds = 0;
+        state.varMistakeIndex = null;
       });
     },
   }))

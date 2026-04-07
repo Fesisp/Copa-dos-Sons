@@ -14,6 +14,7 @@ export const CampeonatoScreen: React.FC<CampeonatoScreenProps> = ({ onNavigate }
   const [playMode, setPlayMode] = useState<'coop' | 'versus'>('coop');
 
   const startCommunityMatch = useGameStore((s) => s.startCommunityMatch);
+  const setCommunityPlayMode = useGameStore((s) => s.setCommunityPlayMode);
   const setAgentMode = useGameStore((s) => s.setAgentMode);
   const setAgentDifficulty = useGameStore((s) => s.setAgentDifficulty);
   const passTurn = useGameStore((s) => s.passTurn);
@@ -46,6 +47,7 @@ export const CampeonatoScreen: React.FC<CampeonatoScreenProps> = ({ onNavigate }
               size="sm"
               onClick={() => {
                 setPlayMode('coop');
+                setCommunityPlayMode('coop');
                 setAgentMode(true);
                 setAgentDifficulty('medium');
               }}
@@ -57,6 +59,7 @@ export const CampeonatoScreen: React.FC<CampeonatoScreenProps> = ({ onNavigate }
               size="sm"
               onClick={() => {
                 setPlayMode('versus');
+                setCommunityPlayMode('versus');
                 setAgentMode(true);
                 setAgentDifficulty('hard');
               }}
@@ -93,6 +96,7 @@ export const CampeonatoScreen: React.FC<CampeonatoScreenProps> = ({ onNavigate }
                     variant="primary"
                     size="md"
                     onClick={() => {
+                      setCommunityPlayMode(playMode);
                       setAgentMode(true);
                       setAgentDifficulty(playMode === 'versus' ? 'hard' : 'medium');
                       startCommunityMatch(word.wordArray, word.id);

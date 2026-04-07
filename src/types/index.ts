@@ -9,9 +9,11 @@ export type MatchSource = 'official' | 'community';
 
 export type MatchStatus = 'idle' | 'playing' | 'victory' | 'review';
 
-export type GameplayMode = 'mission' | 'laboratory';
+export type GameplayMode = 'treino_chute' | 'penaltis' | 'var_juiz' | 'mission' | 'laboratory';
 
 export type GameFocus = 'phonemes' | 'words';
+
+export type CommunityPlayMode = 'coop' | 'versus';
 
 export type DifficultyPhase = 1 | 2 | 3;
 
@@ -105,6 +107,7 @@ export interface GameStore {
   selectedCommunityWordId: string | null;
   gameplayMode: GameplayMode;
   gameFocus: GameFocus;
+  communityPlayMode: CommunityPlayMode;
   difficultyPhase: DifficultyPhase;
   maxAssemblySlots: number;
   missionCardPool: string[];
@@ -114,6 +117,14 @@ export interface GameStore {
   agentMode: boolean;
   agentDifficulty: AgentDifficulty;
   agentProfile: AgentProfile;
+  versusScore: {
+    student: number;
+    agent: number;
+  };
+  timerSeconds: number;
+  playerScore: number;
+  klaytonScore: number;
+  varMistakeIndex: number | null;
 
   // Actions
   setScreen: (screen: AppScreen) => void;
@@ -122,8 +133,14 @@ export interface GameStore {
   setCardsCatalog: (cards: Card[]) => void;
   startOfficialMatch: (match: OfficialMatch) => void;
   startCommunityMatch: (wordArray: string[], customWordId: string) => void;
+  startTreinoChute: (targetPhonemeId: string) => void;
+  startPenaltisMode: (wordArray: string[], customWordId?: string) => void;
+  startVarMode: (correctWord: string[], mistakeIndex: number, wrongPhoneme: string) => void;
   startLaboratoryMode: () => void;
+  setCommunityPlayMode: (mode: CommunityPlayMode) => void;
   setGameplayMode: (mode: GameplayMode) => void;
+  setTimerSeconds: (seconds: number) => void;
+  registerPenaltisGoal: (by: 'player' | 'klayton') => void;
   setDifficultyPhase: (phase: DifficultyPhase) => void;
   setAgentMode: (enabled: boolean) => void;
   setAgentDifficulty: (difficulty: AgentDifficulty) => void;

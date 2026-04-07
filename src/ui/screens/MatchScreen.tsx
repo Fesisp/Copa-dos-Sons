@@ -28,6 +28,12 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
   const crowdDelta = useGameStore((s) => s.crowdDelta);
   const difficultyPhase = useGameStore((s) => s.difficultyPhase);
   const gameplayMode = useGameStore((s) => s.gameplayMode);
+  const communityPlayMode = useGameStore((s) => s.communityPlayMode);
+  const versusScore = useGameStore((s) => s.versusScore);
+  const timerSeconds = useGameStore((s) => s.timerSeconds);
+  const playerScore = useGameStore((s) => s.playerScore);
+  const klaytonScore = useGameStore((s) => s.klaytonScore);
+  const varMistakeIndex = useGameStore((s) => s.varMistakeIndex);
   const maxAssemblySlots = useGameStore((s) => s.maxAssemblySlots);
   const lastAssemblyFeedback = useGameStore((s) => s.lastAssemblyFeedback);
   const isAgentTurn = useGameStore((s) => s.isAgentTurn);
@@ -41,13 +47,31 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
   const passTurn = useGameStore((s) => s.passTurn);
   const setAgentMode = useGameStore((s) => s.setAgentMode);
   const setAgentDifficulty = useGameStore((s) => s.setAgentDifficulty);
+  const setTimerSeconds = useGameStore((s) => s.setTimerSeconds);
+  const registerPenaltisGoal = useGameStore((s) => s.registerPenaltisGoal);
+
+  const modeLabel: Record<typeof gameplayMode, string> = {
+    treino_chute: 'Treino de Chute',
+    penaltis: 'Disputa de Pênaltis',
+    var_juiz: 'VAR - O Juiz é Você',
+    mission: 'Modo Missão',
+    laboratory: 'Modo Laboratório',
+  };
 
   const findSlotByPoint = (point: { x: number; y: number }): number | null => {
+    const tolerance = 40;
+
     for (let index = 0; index < slotRefs.current.length; index += 1) {
       const element = slotRefs.current[index];
       if (!element) continue;
       const rect = element.getBoundingClientRect();
-      const isInside = point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
+
+      const isInside =
+        point.x >= (rect.left - tolerance) &&
+        point.x <= (rect.right + tolerance) &&
+        point.y >= (rect.top - tolerance) &&
+        point.y <= (rect.bottom + tolerance);
+
       if (isInside) return index;
     }
     return null;
@@ -76,6 +100,33 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
     return () => window.clearTimeout(timeoutId);
   }, [availableCards, cardsCatalog]);
 
+  useEffect(() => {
+    if (gameplayMode !== 'penaltis' || matchStatus !== 'playing') {
+      return;
+    }
+
+    if (timerSeconds <= 0) {
+      registerPenaltisGoal('klayton');
+      clearMatchAssembly();
+      setTimerSeconds(15);
+      void audioManager.playNearMissSound();
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setTimerSeconds(timerSeconds - 1);
+    }, 1000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    gameplayMode,
+    matchStatus,
+    timerSeconds,
+    clearMatchAssembly,
+    registerPenaltisGoal,
+    setTimerSeconds,
+  ]);
+
   const showVarModal = matchStatus === 'victory' && matchSource === 'community' && !!selectedCommunityWordId;
 
   if (targetWord.length === 0) {
@@ -93,10 +144,37 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
             {matchSource === 'official' ? '🏆 Partida Oficial' : '🤝 Desafio da Turma'}
           </div>
           <div className="hidden md:block px-4 py-2 rounded-full bg-white/20 border border-white/30 text-white text-xs font-display font-bold uppercase tracking-wider">
-            {gameplayMode === 'mission' ? 'Modo Missão' : 'Modo Laboratório'} · Fase {difficultyPhase}
+            {modeLabel[gameplayMode]} · Fase {difficultyPhase}
           </div>
           <div className="w-[100px]" />
         </div>
+
+        {gameplayMode === 'penaltis' && (
+          <div className="mb-4 rounded-2xl border border-gold-200 bg-black/35 p-3 text-white">
+            <div className="flex items-center justify-between mb-2">
+              <p className="font-display text-xs uppercase tracking-wider text-gold-200">Disputa de Pênaltis</p>
+              <p className="font-display text-sm font-bold">⏱ {timerSeconds}s</p>
+            </div>
+            <div className="w-full h-2 rounded-full bg-white/20 overflow-hidden mb-2">
+              <div
+                className={`h-full ${timerSeconds <= 5 ? 'bg-red-500' : 'bg-gold-400'}`}
+                style={{ width: `${Math.max(0, (timerSeconds / 15) * 100)}%` }}
+              />
+            </div>
+            <p className="font-display text-lg font-bold">
+              Você {playerScore} × {klaytonScore} {agentProfile.name}
+            </p>
+          </div>
+        )}
+
+        {matchSource === 'community' && communityPlayMode === 'versus' && (
+          <div className="mb-4 rounded-2xl border border-gold-200 bg-black/35 p-3 text-white">
+            <p className="font-display text-xs uppercase tracking-wider text-gold-200">Placar Versus</p>
+            <p className="font-display text-lg font-bold">
+              Você {versusScore.student} × {versusScore.agent} {agentProfile.name}
+            </p>
+          </div>
+        )}
 
         <div className="p-4 mb-5 rounded-2xl bg-white/12 border border-white/20 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -134,13 +212,35 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
               </Button>
             ))}
           </div>
+
+          {gameplayMode === 'treino_chute' && (
+            <p className="text-sm text-white/90 font-display font-bold">
+              🎯 Treino de Chute: ouça o som e arraste a bola certa para o gol.
+            </p>
+          )}
+
+          {gameplayMode === 'var_juiz' && (
+            <p className="text-sm text-white/90 font-display font-bold">
+              🚨 Modo VAR: encontre a peça intrusa e corrija a jogada.
+            </p>
+          )}
         </div>
 
         <div className={`flex-1 flex flex-col items-center justify-center ${isAgentTurn ? 'pointer-events-none opacity-80' : ''}`}>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => void audioManager.playWord(targetWord)}
+            onClick={() => {
+              if (gameplayMode === 'treino_chute') {
+                const token = targetWord[0];
+                if (token) {
+                  void audioManager.playPhoneme(token);
+                }
+                return;
+              }
+
+              void audioManager.playWord(targetWord);
+            }}
             className="relative flex flex-col items-center justify-center w-36 h-36 bg-gold-400 rounded-full border-8 border-white shadow-card-float mb-8 z-10 group cursor-pointer"
             type="button"
           >
@@ -156,7 +256,7 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
                 ref={(element) => { slotRefs.current[index] = element; }}
                 slotIndex={index}
                 value={assembledSlots[index]}
-                isActive={hoveredSlot === index}
+                isActive={hoveredSlot === index || (gameplayMode === 'var_juiz' && varMistakeIndex === index)}
                 isCompleted={matchStatus === 'victory'}
               />
             ))}
@@ -175,7 +275,7 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
               onClick={clearMatchAssembly}
               disabled={matchStatus !== 'playing'}
             >
-              Resetar Tentativa
+              {gameplayMode === 'var_juiz' ? 'Reiniciar Revisão' : 'Resetar Tentativa'}
             </Button>
             <div className="px-3 py-2 rounded-xl bg-black/30 text-white text-xs font-display font-bold uppercase tracking-wider">
               Limite: {maxAssemblySlots} slots
@@ -188,7 +288,7 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
           <div className="flex flex-wrap justify-center gap-4">
           {shuffledCards.map((card) => {
             const isUsed = assembledSlots.includes(card.audioKey);
-            if (isUsed && matchStatus !== 'victory') {
+            if (isUsed && matchStatus !== 'victory' && gameplayMode !== 'var_juiz') {
               return <div key={card.id} className="w-28 h-36 opacity-0" />;
             }
 
@@ -199,7 +299,13 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
                 status={wrongCardId === card.id ? 'incorrect' : 'idle'}
                 variant="normal"
                 draggable={matchStatus === 'playing' && !isAgentTurn}
-                onClick={() => void audioManager.playPhoneme(card.audioKey)}
+                onClick={() => {
+                  if (gameplayMode === 'treino_chute') {
+                    void audioManager.playPhoneme(card.audioKey);
+                    return;
+                  }
+                  void audioManager.playPhoneme(card.audioKey);
+                }}
                 onDragMove={(_id, point) => {
                   const slotIndex = findSlotByPoint(point);
                   setHoveredSlot(slotIndex);
@@ -218,7 +324,10 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
                     window.setTimeout(() => setFieldShake(false), 400);
                   } else {
                     void audioManager.playSuccessSound();
-                    if (agentMode && useGameStore.getState().matchStatus === 'playing') {
+                    if (gameplayMode === 'penaltis') {
+                      setTimerSeconds(15);
+                    }
+                    if (agentMode && useGameStore.getState().matchStatus === 'playing' && gameplayMode !== 'treino_chute') {
                       passTurn();
                     }
                   }
@@ -237,9 +346,27 @@ export const MatchScreen: React.FC<MatchScreenProps> = ({ onNavigate }) => {
           >
             <h2 className="font-display text-4xl font-extrabold text-field-600 mb-2">GOLAÇO! ⚽</h2>
             <p className="text-neutral-700 text-lg font-bold mb-6">+{crowdDelta} Torcedores</p>
+            {matchSource === 'community' && communityPlayMode === 'versus' && (
+              <p className="text-sm font-display font-bold text-neutral-600 mb-4">
+                Resultado Versus: Você {versusScore.student} × {versusScore.agent} {agentProfile.name}
+              </p>
+            )}
             {matchSource === 'official' && (
               <Button variant="primary" size="md" onClick={() => { resetCurrentMatch(); onNavigate('campo'); }}>
                 Continuar a Jogar
+              </Button>
+            )}
+            {gameplayMode === 'penaltis' && (
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => {
+                  clearMatchAssembly();
+                  setTimerSeconds(15);
+                  useGameStore.setState({ matchStatus: 'playing', crowdDelta: 0 });
+                }}
+              >
+                Próximo Pênalti
               </Button>
             )}
           </motion.div>

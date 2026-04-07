@@ -2,7 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { Button } from '../components';
 import type { AppScreen } from '../../types';
 import { BNCC_SKILLS } from '../../config/bncc';
-import { TEACHER_REPORT_PIN, TEACHER_REPORT_SESSION_KEY } from '../../config/teacherAccess';
+import {
+  IS_TEACHER_REPORT_PIN_CONFIGURED,
+  TEACHER_REPORT_PIN_SHA256,
+  TEACHER_REPORT_SESSION_KEY,
+} from '../../config/teacherAccess';
 import { pedagogicalReportService } from '../../services/pedagogicalReportService';
 import type { StudentPedagogicalSnapshot } from '../../types/pedagogy';
 
@@ -50,6 +54,22 @@ const recommendationForStudent = (student: StudentPedagogicalSnapshot): string[]
   }
 
   return recommendations;
+};
+
+const timingSafeEqual = (left: string, right: string): boolean => {
+  if (left.length !== right.length) return false;
+  let mismatch = 0;
+  for (let index = 0; index < left.length; index += 1) {
+    mismatch |= left.charCodeAt(index) ^ right.charCodeAt(index);
+  }
+  return mismatch === 0;
+};
+
+const toSha256Hex = async (value: string): Promise<string> => {
+  const encoded = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', encoded);
+  const bytes = Array.from(new Uint8Array(digest));
+  return bytes.map((item) => item.toString(16).padStart(2, '0')).join('');
 };
 
 export const BoletimTecnicoScreen: React.FC<BoletimTecnicoScreenProps> = ({ onNavigate }) => {
@@ -135,8 +155,54 @@ export const BoletimTecnicoScreen: React.FC<BoletimTecnicoScreenProps> = ({ onNa
     [filteredStudents, selectedStudentId]
   );
 
-  const handleAuthorize = () => {
-    if (pinInput.trim() === TEACHER_REPORT_PIN) {
+  const classRiskDistribution = useMemo(() => {
+    const base = { low: 0, medium: 0, high: 0 };
+    for (const student of students) {
+      base[student.riskLevel] += 1;
+    }
+    return base;
+  }, [students]);
+
+  const classAverageBars = useMemo(
+    () => [
+      { label: 'Acurácia', value: classAverages.avgEstimatedAccuracy, max: 100, color: 'bg-field-500', suffix: '%' },
+      { label: 'Aprovação UGC', value: classAverages.avgCommunityApprovalRate, max: 100, color: 'bg-uniform-500', suffix: '%' },
+      { label: 'Torcida', value: classAverages.avgCrowd, max: 100, color: 'bg-success-500', suffix: '' },
+      { label: 'Engajamento', value: classAverages.avgEngagementScore, max: 120, color: 'bg-yellow-500', suffix: '' },
+    ],
+    [classAverages]
+  );
+
+  const handleAuthorize = async () => {
+    if (!IS_TEACHER_REPORT_PIN_CONFIGURED) {
+      setPinError(
+        'PIN pedagógico não configurado. Defina VITE_TEACHER_REPORT_PIN_SHA256 no ambiente para liberar o acesso.'
+      );
+      return;
+    }
+
+    const normalizedPin = pinInput.trim();
+    if (!normalizedPin) {
+      setPinError('Informe o PIN para continuar.');
+      return;
+    }
+
+    if (!TEACHER_REPORT_PIN_SHA256) {
+      setPinError(
+        'PIN pedagógico não configurado. Defina VITE_TEACHER_REPORT_PIN_SHA256 no ambiente para liberar o acesso.'
+      );
+      return;
+    }
+
+    if (!crypto?.subtle) {
+      setPinError('Este navegador não suporta validação criptográfica do PIN.');
+      return;
+    }
+
+    const candidateHash = await toSha256Hex(normalizedPin);
+    const isValidPin = timingSafeEqual(candidateHash, TEACHER_REPORT_PIN_SHA256);
+
+    if (isValidPin) {
       sessionStorage.setItem(TEACHER_REPORT_SESSION_KEY, 'granted');
       setIsAuthorized(true);
       setPinError('');
@@ -163,11 +229,25 @@ export const BoletimTecnicoScreen: React.FC<BoletimTecnicoScreenProps> = ({ onNa
               placeholder="PIN de acesso"
             />
             {pinError && <p className="text-sm text-red-600">{pinError}</p>}
+            {!IS_TEACHER_REPORT_PIN_CONFIGURED && (
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Configure `VITE_TEACHER_REPORT_PIN_SHA256` no ambiente para habilitar este painel com segurança.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="primary" size="md" onClick={handleAuthorize}>Entrar</Button>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => {
+                  void handleAuthorize();
+                }}
+                disabled={!IS_TEACHER_REPORT_PIN_CONFIGURED}
+              >
+                Entrar
+              </Button>
               <Button variant="secondary" size="md" onClick={() => onNavigate('vestiario')}>Voltar</Button>
             </div>
-            <p className="text-xs text-neutral-500">Use o PIN definido pela coordenação ou no arquivo de ambiente.</p>
+            <p className="text-xs text-neutral-500">Use o PIN correspondente ao hash configurado em `VITE_TEACHER_REPORT_PIN_SHA256`.</p>
           </div>
         </div>
       </div>
@@ -389,16 +469,66 @@ export const BoletimTecnicoScreen: React.FC<BoletimTecnicoScreenProps> = ({ onNa
         </div>
 
         <div className="mt-5 rounded-2xl bg-white p-4 shadow-xl">
+          <h2 className="font-display text-xl font-bold text-field-700 mb-2">Indicadores da turma</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+            <div className="rounded-xl border border-neutral-200 p-3">
+              <p className="font-display font-bold text-neutral-800 mb-2">Médias da turma</p>
+              <div className="space-y-2">
+                {classAverageBars.map((metric) => {
+                  const percentage = Math.min(100, (metric.value / metric.max) * 100);
+                  return (
+                    <div key={metric.label}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>{metric.label}</span>
+                        <span>{metric.value}{metric.suffix}</span>
+                      </div>
+                      <div className="w-full h-2 rounded bg-neutral-200 overflow-hidden">
+                        <div className={`h-full ${metric.color}`} style={{ width: `${percentage}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="rounded-xl border border-neutral-200 p-3">
+              <p className="font-display font-bold text-neutral-800 mb-2">Distribuição de risco</p>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg bg-success-50 border border-success-100 p-2">
+                  <p className="text-xs text-success-700">Baixo</p>
+                  <p className="font-display text-xl font-bold text-success-700">{classRiskDistribution.low}</p>
+                </div>
+                <div className="rounded-lg bg-yellow-50 border border-yellow-100 p-2">
+                  <p className="text-xs text-yellow-700">Médio</p>
+                  <p className="font-display text-xl font-bold text-yellow-700">{classRiskDistribution.medium}</p>
+                </div>
+                <div className="rounded-lg bg-red-50 border border-red-100 p-2">
+                  <p className="text-xs text-red-700">Alto</p>
+                  <p className="font-display text-xl font-bold text-red-700">{classRiskDistribution.high}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <h2 className="font-display text-xl font-bold text-field-700 mb-2">Fonemas mais frequentes da turma (UGC)</h2>
           {classTopPhonemes.length === 0 ? (
             <p className="text-sm text-neutral-500">Sem táticas suficientes para ranking fonêmico.</p>
           ) : (
-            <div className="flex flex-wrap gap-2">
-              {classTopPhonemes.map((item) => (
-                <span key={item.phoneme} className="px-3 py-1 rounded-full bg-uniform-100 text-uniform-700 text-sm font-bold uppercase">
-                  {item.phoneme} · {item.count}
-                </span>
-              ))}
+            <div className="space-y-2">
+              {classTopPhonemes.map((item) => {
+                const maxCount = classTopPhonemes[0]?.count ?? 1;
+                const percentage = Math.max(6, (item.count / maxCount) * 100);
+                return (
+                  <div key={item.phoneme}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="font-bold uppercase">{item.phoneme}</span>
+                      <span>{item.count} ocorrências</span>
+                    </div>
+                    <div className="w-full h-2 rounded bg-neutral-200 overflow-hidden">
+                      <div className="h-full bg-uniform-500" style={{ width: `${percentage}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

@@ -65,6 +65,49 @@ Expected outputs:
 3. Re-open core flows (`Locker Room -> Match -> Board -> Championship`).
 4. Confirm persisted progress and audio playback still work.
 
+## CI Pipeline
+
+Every push and pull request triggers GitHub Actions in `.github/workflows/main.yml` with the sequence: `Linter -> Testes E2E -> Build`.
+
+## Teacher PIN (Hashed)
+
+For the protected teacher dashboard, configure the SHA-256 hash of the school PIN:
+
+```dotenv
+VITE_TEACHER_REPORT_PIN_SHA256=<64-char lowercase hex>
+```
+
+Generate the hash from a 4-8 digit PIN:
+
+```powershell
+npm run teacher:pin-hash -- 1234
+```
+
+## End-to-End Testing
+
+```powershell
+Set-Location "c:\Users\mrfel\OneDrive\Laboratorio\VSCode\Copa dos Sons"
+npm run e2e
+npm run e2e:headed
+```
+
+## Docker (Multi-Stage)
+
+```powershell
+Set-Location "c:\Users\mrfel\OneDrive\Laboratorio\VSCode\Copa dos Sons"
+docker build -t copa-dos-sons:latest .
+docker run --rm -p 8080:80 copa-dos-sons:latest
+```
+
+## Lighthouse Audit (PWA)
+
+```powershell
+Set-Location "c:\Users\mrfel\OneDrive\Laboratorio\VSCode\Copa dos Sons"
+npm run build
+npm run preview
+npx lighthouse http://localhost:4173 --preset=desktop --only-categories=performance,accessibility,best-practices,pwa --output=html --output-path=./docs/lighthouse-report.html
+```
+
 ## License
 
 Educational use project for literacy scenarios. See repository policy for distribution details.

@@ -56,9 +56,16 @@ Observação:
 
 ## 5. Segurança e acesso docente
 
-- Definir PIN docente no arquivo de ambiente (`VITE_TEACHER_REPORT_PIN`).
+- Definir hash SHA-256 do PIN docente no ambiente antes da ativação (`VITE_TEACHER_REPORT_PIN_SHA256`).
 - Não compartilhar PIN com estudantes.
 - Encerrar sessão docente ao finalizar uso.
+
+### 5.1 Configuração mínima obrigatória
+
+1. Criar arquivo de ambiente de produção a partir do exemplo disponível.
+2. Definir `VITE_TEACHER_REPORT_PIN_SHA256` com hash SHA-256 do PIN exclusivo da escola.
+3. Regerar build e validar acesso ao Boletim com PIN correto.
+4. Confirmar que sem PIN o Boletim permanece bloqueado.
 
 ---
 
@@ -94,6 +101,7 @@ Como os dados são locais (IndexedDB), recomenda-se:
 - [ ] Professor encerrou sessão do boletim.
 - [ ] Dispositivo carregando para próximo dia.
 - [ ] Sem limpeza de cache/dados do navegador.
+- [ ] Partidas no modo Versus exibem placar `Você x Klayton` durante e após a partida.
 
 ---
 

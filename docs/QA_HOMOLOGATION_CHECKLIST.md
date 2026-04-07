@@ -48,6 +48,7 @@ Evidências:
 ## 2.5 Campeonato + VAR
 - [ ] Lista de táticas aparece (ranking/recentes).
 - [ ] Partida comunitária abre corretamente.
+- [ ] Modo `Versus` exibe placar `Você x Klayton` durante a partida.
 - [ ] Modal VAR registra voto e retorna ao campeonato.
 
 ---
@@ -55,6 +56,7 @@ Evidências:
 ## 3. Fluxos funcionais (professor)
 
 ## 3.1 Segurança de acesso
+- [ ] `VITE_TEACHER_REPORT_PIN_SHA256` configurado no ambiente de homologação.
 - [ ] Área do boletim exige PIN.
 - [ ] Sessão docente pode ser encerrada.
 
@@ -95,6 +97,8 @@ Evidências:
 - [ ] `npm run lint` sem erros.
 - [ ] `npm run build` concluído com sucesso.
 - [ ] Artefatos `dist/sw.js` e `dist/workbox-*.js` gerados.
+- [ ] Auditoria Lighthouse executada com relatório salvo (`docs/lighthouse-report.html`).
+- [ ] Notas Lighthouse >= 90 em Performance, Accessibility, Best Practices e PWA.
 
 ---
 
